@@ -142,21 +142,35 @@ string toCommaNumber (real value, bool doStrip)
 	return res;
 }
 
-string toAmountString (long value, bool isGold = false, bool doStrip = true)
+string toAmountString (long value, bool isGold = false, byte doStrip = 1)
 {
 	if (value == -1)
 	{
 		return "?";
 	}
+	if (doStrip > 1)
+	{
+		if (value >= 10_000)
+		{
+			value = (value / 1000) * 1000;
+		}
+	}
 	if (isGold)
 	{
-		return toCommaNumber (value * 1E+0L,
-		    doStrip || isGold);
+		if (doStrip > 1 && value % 1000 == 0)
+		{
+			return toCommaNumber (value / 1000 * 1E+0L,
+			    true) ~ "K";
+		}
+		else
+		{
+			return toCommaNumber (value * 1E+0L, true);
+		}
 	}
 	else
 	{
 		return toCommaNumber (value * 1E-3L,
-		    doStrip || isGold) ~ " kg";
+		    !!doStrip || isGold) ~ " kg";
 	}
 }
 
@@ -639,7 +653,8 @@ int main (string [] args)
 				    classString (makeValue
 				    (resources.front, pos, false)),
 				    toCoordString (pos),
-				    toAmountString (fun (pos)))),
+				    toAmountString (fun (pos),
+				    name == "gold", 2))),
 				    (plotsToShow < curPlots.length) ?
 				    ", ..." : "");
 				file.writeln (`</tr>`);
