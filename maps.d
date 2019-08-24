@@ -418,7 +418,8 @@ int main (string [] args)
 	alias ResTemplate = Tuple !(string, q{name},
 	    int delegate (Coord), q{fun}, int, q{divisor});
 
-	string makeValue () (auto ref ResTemplate resource, Coord pos)
+	string makeValue () (auto ref ResTemplate resource, Coord pos,
+	    bool maskOwner = true)
 	{
 		auto value = resource.fun (pos);
 		string res = value.text;
@@ -442,7 +443,7 @@ int main (string [] args)
 		{
 			assert (false);
 		}
-		if (a[pos].owner != "")
+		if (maskOwner && a[pos].owner != "")
 		{
 			res ~= "x";
 		}
@@ -484,11 +485,15 @@ int main (string [] args)
 		writeCoordRow (file);
 		long [string] [string] quantity;
 		int [string] [string] richPlots;
+		Coord [] [string] [string] plotsByOwner;
 		int [string] totalRichPlots;
 		int [string] totalUnknownPlots;
 		long [string] totalQuantity;
 		foreach (name; resources.map !(t => t.name))
 		{
+			quantity[""][name] = 0;
+			richPlots[""][name] = 0;
+			plotsByOwner[""][name] = null;
 			totalRichPlots[name] = 0;
 			totalUnknownPlots[name] = 0;
 			totalQuantity[name] = 0;
@@ -509,23 +514,28 @@ int main (string [] args)
 				auto hoverText = toCoordString (pos);
 				string bestName;
 				string bestValue;
-				int total = 0;
 				foreach (ref resource; resources)
 				{
 					auto name = resource.name;
 					auto fun = resource.fun;
 					auto divisor = resource.divisor;
 					auto value = makeValue (resource, pos);
-					quantity[owner][name] +=
-					    max (0, fun (pos));
-					total += max (0, fun (pos));
+					auto curQuantity = max (0, fun (pos));
+					if (curQuantity > 0)
+					{
+						quantity[owner][name] +=
+						    curQuantity;
+						totalQuantity[name] +=
+						    curQuantity;
+						plotsByOwner[owner][name] ~=
+						    pos;
+					}
 					auto isRichPlot = (fun (pos) * 2 >
 					    resourceLimit[name]);
 					richPlots[owner][name] += isRichPlot;
 					totalRichPlots[name] += isRichPlot;
 					totalUnknownPlots[name] +=
 					    (fun (pos) == -1);
-					totalQuantity[name] += fun (pos);
 					hoverText ~= `&#10;` ~ name ~ `: ` ~
 					    fun (pos).toAmountString
 					    (name == "gold");
@@ -557,6 +567,7 @@ int main (string [] args)
 		if (resources.length == 1)
 		{
 			auto name = resources.front.name;
+			auto fun = resources.front.fun;
 			bool showRich = (name != "wood" &&
 			    name != "stone" &&
 			    name != "coffee");
@@ -573,6 +584,8 @@ int main (string [] args)
 				plotOwners.schwartzSort !(owner =>
 				    tuple (-quantity[owner][name], owner));
 			}
+			plotOwners = plotOwners.until !(owner =>
+			    owner != "" && quantity[owner][name] == 0).array;
 			file.writefln (`<h2>Richest %s plot owners:</h2>`,
 			    name);
 			file.writeln (`<table border="1px" padding="2px">`);
@@ -588,6 +601,7 @@ int main (string [] args)
 				file.writefln (`<th>Rich plots</th>`);
 			}
 			file.writefln (`<th>Total quantity</th>`);
+			file.writefln (`<th>Best plots</th>`);
 			file.writeln (`</tr>`);
 
 			foreach (i, owner; plotOwners)
@@ -614,6 +628,20 @@ int main (string [] args)
 				file.writeln (`<td style="text-align:right">`,
 				    toAmountString (quantity[owner][name],
 				    name == "gold", false), `</td>`);
+				auto curPlots = plotsByOwner[owner][name];
+				auto plotsToShow = min (3, curPlots.length);
+				curPlots.schwartzSort !(pos =>
+				    tuple (-fun (pos), pos));
+				file.writefln (`<td>%-(%s, %)%s</td>`,
+				    curPlots[0..plotsToShow].map !(pos =>
+				    format (`<span class="%s-%s">` ~
+				    `%s (%s)</span>`, name,
+				    classString (makeValue
+				    (resources.front, pos, false)),
+				    toCoordString (pos),
+				    toAmountString (fun (pos)))),
+				    (plotsToShow < curPlots.length) ?
+				    ", ..." : "");
 				file.writeln (`</tr>`);
 			}
 
@@ -632,6 +660,7 @@ int main (string [] args)
 			file.writeln (`<td style="text-align:right">`,
 			    toAmountString (totalQuantity[name],
 			    name == "gold", false), `</td>`);
+			file.writeln (`<td>&nbsp;</td>`);
 			file.writeln (`</tr>`);
 
 			if (showRich)
@@ -647,6 +676,7 @@ int main (string [] args)
 				    `&nbsp;</td>`);
 				file.writeln (`<td style="text-align:right">`,
 				    totalRichPlots[name], `</td>`);
+				file.writeln (`<td>&nbsp;</td>`);
 				file.writeln (`</tr>`);
 
 				file.writeln (`<tr>`);
@@ -660,6 +690,7 @@ int main (string [] args)
 				    `&nbsp;</td>`);
 				file.writeln (`<td style="text-align:right">`,
 				    totalUnknownPlots[name], `</td>`);
+				file.writeln (`<td>&nbsp;</td>`);
 				file.writeln (`</tr>`);
 			}
 
