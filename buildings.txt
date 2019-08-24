@@ -1,0 +1,10 @@
+ 1	Gold Mine	R	#FFF7D0	#FFD700
+ 2	Iron Ore Quarry	R	#EFDFF7	#7F50A7
+ 3	Clay Quarry	R	#EFDFDF	#AD5049
+ 4	Coal Mine	R	#7F7F7F	#1F1F1F
+ 5	Stone Workshop	M	#DFDFFF	#888CAD
+ 6	Iron Furnace	M	#F7DFF3	#B04973
+ 7	Brickyard	M	#F7D7DF	#CF6F3F
+ 8	Sawmill	M	#D0FFD0	#30AF30
+ 9	Tool Workshop	T	#CFDFF7	#4682B4
+10	Cart Factory	T	#F7EFE7	#C19A6B
