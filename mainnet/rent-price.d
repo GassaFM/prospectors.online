@@ -9,16 +9,74 @@ import std.json;
 import std.range;
 import std.stdio;
 import std.string;
+import std.traits;
 import std.typecons;
+
+import prospectorsc_abi;
+import transaction;
+
+auto parseBinary (T) (ref ubyte [] buffer)
+{
+	static if (is (Unqual !(T) == E [], E))
+	{
+		size_t len; // for sizes > 127, should use VarInt32 here
+		len = parseBinary !(byte) (buffer);
+		E [] res;
+		res.reserve (len);
+		foreach (i; 0..len)
+		{
+			res ~= parseBinary !(E) (buffer);
+		}
+		return res;
+	}
+	else static if (is (T == struct))
+	{
+		T res;
+		alias fieldNames = FieldNameTuple !(T);
+		alias fieldTypes = FieldTypeTuple !(T);
+		static foreach (i; 0..fieldNames.length)
+		{
+			mixin ("res." ~ fieldNames[i]) =
+			    parseBinary !(fieldTypes[i]) (buffer);
+		}
+		return res;
+	}
+	else
+	{
+		enum len = T.sizeof;
+		T res = *(cast (T *) (buffer.ptr));
+		buffer = buffer[len..$];
+		return res;
+	}
+}
 
 int main (string [] args)
 {
-	auto r = File ("stat.json", "rt").byLine.joiner.parseJSON;
-	auto t = r["rows"].array.front["json"];
-	auto oldPrice = t["rent_price"].integer * 30;
-	auto jobMinutes = t["job_count"].integer;
-	auto jobGold = t["job_sum"].integer;
-	auto moment = SysTime.fromUnixTime (t["begin_time"].integer, UTC ());
+	long oldPrice;
+	long jobMinutes;
+	long jobGold;
+	SysTime moment;
+
+	{
+		auto statJSON = File ("stat.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; statJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curStat = parseBinary !(statElement) (hex);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			oldPrice = curStat.rent_price * 30;
+			jobMinutes = curStat.job_count;
+			jobGold = curStat.job_sum;
+			moment =
+			    SysTime.fromUnixTime (curStat.begin_time, UTC ());
+		}
+	}
+
 	auto timeSpan = 24 * 60;
 	auto now = Clock.currTime (UTC ());
 	auto nowString = now.toSimpleString[0..20];

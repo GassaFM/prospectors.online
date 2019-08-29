@@ -11,34 +11,47 @@ import std.math;
 import std.range;
 import std.stdio;
 import std.string;
+import std.traits;
 import std.typecons;
+
+import prospectorsc_abi;
+import transaction;
 
 immutable int colorThreshold = 0x80;
 
-struct Location
+auto parseBinary (T) (ref ubyte [] buffer)
 {
-	int row;
-	int col;
-	int gold;
-	int wood;
-	int stone;
-	int coal;
-	int clay;
-	int ore;
-	int coffee;
-	int space;
-	string owner;
-	string name;
-	long rentTime;
-	short buildId;
-	short buildStep;
-	int buildAmount;
-	long buildReadyTime;
-	long [] buildJobStartTime;
-	long [] buildJobReadyTime;
-	long auctionCompleteTime;
-	string auctionBidder;
-	long auctionPrice;
+	static if (is (Unqual !(T) == E [], E))
+	{
+		size_t len; // for sizes > 127, should use VarInt32 here
+		len = parseBinary !(byte) (buffer);
+		E [] res;
+		res.reserve (len);
+		foreach (i; 0..len)
+		{
+			res ~= parseBinary !(E) (buffer);
+		}
+		return res;
+	}
+	else static if (is (T == struct))
+	{
+		T res;
+		alias fieldNames = FieldNameTuple !(T);
+		alias fieldTypes = FieldTypeTuple !(T);
+		static foreach (i; 0..fieldNames.length)
+		{
+			mixin ("res." ~ fieldNames[i]) =
+			    parseBinary !(fieldTypes[i]) (buffer);
+		}
+		return res;
+	}
+	else
+	{
+		enum len = T.sizeof;
+		T res = *(cast (T *) (buffer.ptr));
+		buffer = buffer[len..$];
+		return res;
+	}
 }
 
 alias Coord = Tuple !(int, q{row}, int, q{col});
@@ -195,7 +208,7 @@ int toColorInt (int [] c)
 	return res;
 }
 
-struct Building
+struct BuildingPlan
 {
 	long id;
 	string name;
@@ -214,65 +227,145 @@ struct Building
 	}
 }
 
+int row (const ref locElement loc)
+{
+	return cast (short) (loc.id >> 16);
+}
+
+int col (const ref locElement loc)
+{
+	return cast (short) (loc.id & 0xFFFF);
+}
+
 int main (string [] args)
 {
 	immutable int buildStepLength =
 	    (args.length > 1 && args[1] == "testnet") ? 1500 : 15000;
 	immutable int buildSteps = 3;
 
-	auto rentPrice = File ("stat.json", "rt").byLine.joiner
-	    .parseJSON["rows"].array.front["json"]["rent_price"].integer * 30;
+	int rentPrice = -1;
 
-	auto locJSON = File ("loc.json", "rt").byLine.joiner.parseJSON;
-	immutable int livePeriod = 60 * 60 * 24 * 2;
+	{
+		auto statJSON = File ("stat.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; statJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curStat = parseBinary !(statElement) (hex);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			rentPrice = curStat.rent_price.to !(int) * 30;
+		}
+	}
+
+	locElement [Coord] locations;
+
+	{
+		auto locJSON = File ("loc.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; locJSON["rows"].array)
+		{
+			auto id = row["key"].str.to !(long);
+			auto coord = toCoord (id);
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			locations[coord] = parseBinary !(locElement) (hex);
+			static immutable int [] emptyAlt = [0, 0, 0];
+			if (!hex.empty && !hex.equal (emptyAlt))
+			{
+				assert (false);
+			}
+		}
+	}
+
+	int totalPlots = locations.length.to !(int);
+
 	int minRow = int.max;
 	int maxRow = int.min;
 	int minCol = int.max;
 	int maxCol = int.min;
-	int totalPlots = 0;
-
-	auto workerJSON = File ("worker.json", "rt").byLine.joiner.parseJSON;
-	int [Coord] workerNum;
-	JSONValue [] [string] workersByOwner;
-	foreach (ref row; workerJSON["rows"].array)
+	foreach (ref cur; locations)
 	{
-		auto pos = row["json"]["loc_id"].integer;
-		auto coord = toCoord (pos);
-		workerNum[coord] += 1;
-		auto owner = row["json"]["owner"].str;
-		workersByOwner[owner] ~= row["json"];
+		minRow = min (minRow, cur.row);
+		maxRow = max (maxRow, cur.row);
+		minCol = min (minCol, cur.col);
+		maxCol = max (maxCol, cur.col);
 	}
 
-	Location [Coord] a;
-	foreach (ref row; locJSON["rows"].array)
-	{
-		totalPlots += 1;
+	workerElement [] [string] workersByOwner;
+	int [Coord] workerNum;
 
-		auto id = row["json"]["id"].integer;
-		auto coord  = toCoord (id);
-		auto gold   = row["json"]["gold"]  .integer.to !(int);
-		auto wood   = row["json"]["wood"]  .integer.to !(int);
-		auto stone  = row["json"]["stone"] .integer.to !(int);
-		auto coal   = row["json"]["coal"]  .integer.to !(int);
-		auto clay   = row["json"]["clay"]  .integer.to !(int);
-		auto ore    = row["json"]["ore"]   .integer.to !(int);
-		auto coffee = row["json"]["coffee"].integer.to !(int);
-		auto owner  = row["json"]["owner"] .str;
-		auto name   = row["json"]["name"]  .str;
-		auto space  = !gold && !wood && !stone && !coal && !clay &&
-		              !ore && !coffee && owner == "";
-		auto rentTime = row["json"]["rent_time"].integer.to !(long);
-		auto buildId = row["json"]
-		    ["building"]["build_id"].integer.to !(short);
-		auto buildStep = row["json"]
-		    ["building"]["build_step"].integer.to !(short);
-		auto buildAmount = row["json"]
-		    ["building"]["build_amount"].integer.to !(int);
-		auto buildReadyTime = row["json"]
-		    ["building"]["ready_time"].integer.to !(int);
-		auto buildJobOwners = row["json"]["jobs"].array
-		    .filter !(line => line["job_type"].integer == 4)
-		    .map !(line => line["owner"].str).array;
+	{
+		auto workerJSON = File ("worker.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; workerJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curWorker = parseBinary !(workerElement) (hex);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			auto locId = curWorker.loc_id;
+			auto pos = toCoord (locId);
+			workerNum[pos] += 1;
+			auto owner = curWorker.owner.text;
+			workersByOwner[owner] ~= curWorker;
+		}
+	}
+
+	auto nowTime = Clock.currTime (UTC ());
+	auto nowString = nowTime.toSimpleString[0..20];
+	auto nowUnix = nowTime.toUnixTime ();
+
+	auctionElement [Coord] auctions;
+
+	{
+		auto auctionJSON = File ("auction.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; auctionJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curAuction = parseBinary !(auctionElement) (hex);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			auto locId = curAuction.loc_id;
+			auto pos = toCoord (locId);
+			if (curAuction.target.text != "" ||
+			    curAuction.end_time < nowUnix ||
+			    (curAuction.type != 0 && curAuction.type != 2))
+			{
+				continue;
+			}
+			auctions[pos] = curAuction;
+		}
+	}
+
+	auto buildings = BuildingPlan.init ~ File ("../buildings.txt", "rt")
+	    .byLineCopy.map !(line => BuildingPlan (line)).array;
+
+	int calcBuildingDone () (auto ref Coord pos)
+	{
+	}
+
+	int [Coord] buildingDone;
+
+	foreach (pos, ref cur; locations)
+	{
+		auto buildId = cur.building.build_id;
+		auto buildStep = cur.building.build_step;
+		auto buildAmount = cur.building.build_amount;
+		auto buildReadyTime = cur.building.ready_time;
+		auto buildJobOwners = cur.jobs
+		    .filter !(line => line.job_type == 4)
+		    .map !(line => line.owner.text).array;
 		sort (buildJobOwners);
 		buildJobOwners = buildJobOwners.uniq.array;
 		long [] buildJobStartTime;
@@ -281,54 +374,31 @@ int main (string [] args)
 		{
 			foreach (worker; workersByOwner[curOwner])
 			{
-				if (worker["job"]["job_type"].integer == 4 &&
-				    worker["job"]["loc_id"].integer == id)
+				if (worker.job.job_type == 4 &&
+				    worker.job.loc_id.toCoord == pos)
 				{
-					buildJobStartTime ~= worker["job"]
-					    ["loc_time"].integer;
-					buildJobReadyTime ~= worker["job"]
-					    ["ready_time"].integer;
+					buildJobStartTime ~=
+					    worker.job.loc_time;
+					buildJobReadyTime ~=
+					    worker.job.ready_time;
 				}
 			}
 		}
-		a[coord] = Location (coord.row, coord.col,
-		    gold, wood, stone, coal, clay, ore, coffee,
-		    space, owner, name, rentTime,
-		    buildId, buildStep, buildAmount, buildReadyTime,
-		    buildJobStartTime, buildJobReadyTime);
-	}
 
-	foreach (ref cur; a)
-	{
-		minRow = min (minRow, cur.row);
-		maxRow = max (maxRow, cur.row);
-		minCol = min (minCol, cur.col);
-		maxCol = max (maxCol, cur.col);
-	}
-
-	auto nowTime = Clock.currTime (UTC ());
-	auto nowString = nowTime.toSimpleString[0..20];
-	auto nowUnix = nowTime.toUnixTime ();
-
-	auto auctionJSON = File ("auction.json", "rt").byLine.joiner.parseJSON;
-	foreach (ref row; auctionJSON["rows"].array)
-	{
-		auto type = row["json"]["type"].integer;
-		auto target = row["json"]["target"].str;
-		auto endTime = row["json"]["end_time"].integer;
-		if (target != "" || endTime < nowUnix ||
-		    (type != 0 && type != 2))
+		auto doneMinutes = buildAmount;
+		doneMinutes += buildStepLength * buildStep;
+		auto doneSeconds = doneMinutes * 60;
+		foreach (j; 0..buildJobStartTime.length)
 		{
-			continue;
+			auto start = buildJobStartTime[j];
+			auto ready = buildJobReadyTime[j];
+			start = max (start, nowUnix);
+			auto duration = ready - start;
+			duration = max (0, duration);
+			doneSeconds -= duration;
 		}
-		auto id = row["json"]["loc_id"].integer.toCoord;
-		a[id].auctionPrice = row["json"]["price"].integer;
-		a[id].auctionBidder = row["json"]["bid_user"].str;
-		a[id].auctionCompleteTime = endTime;
+		buildingDone[pos] = doneSeconds / 60;
 	}
-
-	auto buildings = Building.init ~ File ("../buildings.txt", "rt")
-	    .byLineCopy.map !(line => Building (line)).array;
 
 	string toCoordString (Coord pos)
 	{
@@ -348,34 +418,16 @@ int main (string [] args)
 
 		// as in the game: first column, then row
 		auto res = numString (pos.col) ~ "/" ~ numString (pos.row);
-		if (a[pos].name != "")
+		if (locations[pos].name != "")
 		{
-			res ~= ", " ~ a[pos].name;
+			res ~= ", " ~ locations[pos].name;
 		}
-		return res;
-	}
-
-	int buildingDone () (auto ref Coord pos)
-	{
-		auto res = a[pos].buildAmount;
-		res += buildStepLength * a[pos].buildStep;
-		res *= 60;
-		foreach (j; 0..a[pos].buildJobStartTime.length)
-		{
-			auto start = a[pos].buildJobStartTime[j];
-			auto ready = a[pos].buildJobReadyTime[j];
-			start = max (start, nowUnix);
-			auto duration = ready - start;
-			duration = max (0, duration);
-			res -= duration;
-		}
-		res /= 60;
 		return res;
 	}
 
 	int rentDaysLeft () (auto ref Coord pos)
 	{
-		auto rentTime = a[pos].rentTime;
+		auto rentTime = locations[pos].rent_time.to !(long);
 		auto secLeft = rentTime - nowUnix;
 		auto realDaysLeft = floor (secLeft / (1.0L * 60 * 60 * 24));
 		return realDaysLeft.to !(int);
@@ -386,16 +438,18 @@ int main (string [] args)
 		foreach (col; minCol..maxCol + 1)
 		{
 			auto pos = Coord (row, col);
-			if (pos !in a)
+			if (pos !in locations)
 			{
 				assert (false);
 			}
 			auto intDaysLeft = rentDaysLeft (pos);
-			if (intDaysLeft == -8 && a[pos].auctionPrice == 0)
+			if (intDaysLeft == -8 && pos !in auctions)
 			{
-				a[pos].auctionPrice = rentPrice;
-				a[pos].auctionBidder = "";
-				a[pos].auctionCompleteTime = a[pos].rentTime +
+				auctions[pos] = auctionElement.init;
+				auctions[pos].price = rentPrice;
+				auctions[pos].bid_user = Name ("");
+				auctions[pos].end_time =
+				    locations[pos].rent_time +
 				    60 * 60 * 24 * 8;
 			}
 		}
@@ -457,7 +511,7 @@ int main (string [] args)
 		{
 			assert (false);
 		}
-		if (maskOwner && a[pos].owner != "")
+		if (maskOwner && locations[pos].owner.text != "")
 		{
 			res ~= "x";
 		}
@@ -474,13 +528,20 @@ int main (string [] args)
 	resourceLimit["coffee"] =    300_000;
 
 	ResTemplate [] resTemplate;
-	resTemplate ~= ResTemplate ("gold",   pos => a[pos].gold,   10 ^^ 6);
-	resTemplate ~= ResTemplate ("wood",   pos => a[pos].wood,   10 ^^ 6);
-	resTemplate ~= ResTemplate ("stone",  pos => a[pos].stone,  10 ^^ 6);
-	resTemplate ~= ResTemplate ("coal",   pos => a[pos].coal,   10 ^^ 6);
-	resTemplate ~= ResTemplate ("clay",   pos => a[pos].clay,   10 ^^ 6);
-	resTemplate ~= ResTemplate ("ore",    pos => a[pos].ore,    10 ^^ 6);
-	resTemplate ~= ResTemplate ("coffee", pos => a[pos].coffee, 10 ^^ 4);
+	resTemplate ~= ResTemplate ("gold",
+	    pos => locations[pos].gold,   10 ^^ 6);
+	resTemplate ~= ResTemplate ("wood",
+	    pos => locations[pos].wood,   10 ^^ 6);
+	resTemplate ~= ResTemplate ("stone",
+	    pos => locations[pos].stone,  10 ^^ 6);
+	resTemplate ~= ResTemplate ("coal",
+	    pos => locations[pos].coal,   10 ^^ 6);
+	resTemplate ~= ResTemplate ("clay",
+	    pos => locations[pos].clay,   10 ^^ 6);
+	resTemplate ~= ResTemplate ("ore",
+	    pos => locations[pos].ore,    10 ^^ 6);
+	resTemplate ~= ResTemplate ("coffee",
+	    pos => locations[pos].coffee, 10 ^^ 4);
 	resTemplate ~= ResTemplate ("worker",
 	    pos => pos in workerNum ? workerNum[pos] : 0, 10 ^^ 0);
 
@@ -520,11 +581,11 @@ int main (string [] args)
 			foreach (col; minCol..maxCol + 1)
 			{
 				auto pos = Coord (row, col);
-				if (pos !in a)
+				if (pos !in locations)
 				{
 					assert (false);
 				}
-				auto owner = a[pos].owner;
+				auto owner = locations[pos].owner.text;
 				auto hoverText = toCoordString (pos);
 				string bestName;
 				string bestValue;
@@ -747,11 +808,11 @@ int main (string [] args)
 			foreach (col; minCol..maxCol + 1)
 			{
 				auto pos = Coord (row, col);
-				if (pos !in a)
+				if (pos !in locations)
 				{
 					assert (false);
 				}
-				auto owner = a[pos].owner;
+				auto owner = locations[pos].owner.text;
 				auto hoverText = toCoordString (pos);
 				string bestName;
 				string bestValue;
@@ -819,17 +880,17 @@ int main (string [] args)
 			foreach (col; minCol..maxCol + 1)
 			{
 				auto pos = Coord (row, col);
-				if (pos !in a)
+				if (pos !in locations)
 				{
 					assert (false);
 				}
-				auto owner = a[pos].owner;
+				auto owner = locations[pos].owner.text;
 				numPlots[owner] += 1;
 				auto backgroundColor = (owner == "") ?
 				    0xEEEEEE : toColorHash (owner);
 				if (type == RentMapType.auction &&
 				    owner != "" &&
-				    a[pos].auctionPrice == 0)
+				    pos !in auctions)
 				{
 					backgroundColor = 0xBBBBBB;
 				}
@@ -841,7 +902,8 @@ int main (string [] args)
 				auto daysLeft = "&nbsp;";
 				if (type != RentMapType.simple && owner != "")
 				{
-					auto rentTime = a[pos].rentTime;
+					auto rentTime =
+					    locations[pos].rent_time;
 					auto secLeft = rentTime - nowUnix;
 					auto intDaysLeft = rentDaysLeft (pos);
 					intDaysLeft = min (intDaysLeft, 99);
@@ -908,8 +970,8 @@ int main (string [] args)
 		}
 		else if (type == RentMapType.daysLeft)
 		{
-			auto plotsBlocked = a.byKeyValue ().filter !(line =>
-			    line.value.owner != "" &&
+			auto plotsBlocked = locations.byKeyValue ()
+			    .filter !(line => line.value.owner.text != "" &&
 			    rentDaysLeft (line.key) < 0).array;
 			plotsBlocked.schwartzSort !(line =>
 			    tuple (rentDaysLeft (line.key),
@@ -951,8 +1013,9 @@ int main (string [] args)
 
 			foreach (i, t; plotsBlocked)
 			{
-				auto backgroundColor = (t.value.owner == "") ?
-				    0xEEEEEE : toColorHash (t.value.owner);
+				auto backgroundColor =
+				    (t.value.owner.text == "") ? 0xEEEEEE :
+				    toColorHash (t.value.owner.text);
 				file.writeln (`<tr>`);
 				file.writeln (`<td style="text-align:right">`,
 				    (i + 1), `</td>`);
@@ -981,12 +1044,12 @@ int main (string [] args)
 				}
 				auto backgroundColorBuilding = 0xEEEEEE;
 				auto buildingDetails = "&nbsp;";
-				auto buildId = t.value.buildId;
+				auto buildId = t.value.building.build_id;
 				if (buildId != 0)
 				{
 					buildingDetails =
 					    buildings[buildId].name;
-					auto done = buildingDone (t.key);
+					auto done = buildingDone[t.key];
 					if (done != buildStepLength *
 					    buildSteps)
 					{
@@ -1023,12 +1086,12 @@ int main (string [] args)
 		}
 		else if (type == RentMapType.auction)
 		{
-			auto plotsAuction = a.byKeyValue ().filter !(line =>
-			    line.value.auctionPrice > 0).array;
+			auto plotsAuction = locations.byKeyValue ().filter
+			    !(line => line.key in auctions).array;
 			plotsAuction.schwartzSort !(line =>
-			    tuple (line.value.auctionPrice,
-			    line.value.auctionCompleteTime,
-			    -line.value.rentTime));
+			    tuple (auctions[line.key].price,
+			    auctions[line.key].end_time,
+			    -line.value.rent_time));
 			file.writeln (`<h2>Active auctions:</h2>`);
 			file.writeln (`<p>Click on a column header ` ~
 			    `to sort.</p>`);
@@ -1072,8 +1135,9 @@ int main (string [] args)
 
 			foreach (i, t; plotsAuction)
 			{
-				auto backgroundColor = (t.value.owner == "") ?
-				    0xEEEEEE : toColorHash (t.value.owner);
+				auto backgroundColor =
+				    (t.value.owner.text == "") ? 0xEEEEEE :
+				    toColorHash (t.value.owner.text);
 				file.writeln (`<tr>`);
 				file.writeln (`<td style="text-align:right">`,
 				    (i + 1), `</td>`);
@@ -1087,7 +1151,7 @@ int main (string [] args)
 				    `"Courier New", Courier, monospace'>`,
 				    t.value.owner, `</td>`);
 				auto minutesLeft =
-				    t.value.auctionCompleteTime - nowUnix;
+				    auctions[t.key].end_time - nowUnix;
 				minutesLeft /= 60;
 				minutesLeft = max (0, minutesLeft);
 				file.writefln (`<td ` ~
@@ -1099,11 +1163,11 @@ int main (string [] args)
 				    minutesLeft % 60);
 				file.writefln (`<td ` ~
 				    `style="text-align:right">%s</td>`,
-				    toCommaNumber (t.value.auctionPrice,
+				    toCommaNumber (auctions[t.key].price,
 				    true));
 				file.writeln (`<td style='font-family:` ~
 				    `"Courier New", Courier, monospace'>`,
-				    t.value.auctionBidder, `</td>`);
+				    auctions[t.key].bid_user.text, `</td>`);
 				auto rentLeft = rentDaysLeft (t.key);
 				file.writeln (`<td style="text-align:right">`,
 				    rentLeft, `</td>`);
@@ -1120,12 +1184,12 @@ int main (string [] args)
 				}
 				auto backgroundColorBuilding = 0xEEEEEE;
 				auto buildingDetails = "&nbsp;";
-				auto buildId = t.value.buildId;
+				auto buildId = t.value.building.build_id;
 				if (buildId != 0)
 				{
 					buildingDetails =
 					    buildings[buildId].name;
-					auto done = buildingDone (t.key);
+					auto done = buildingDone[t.key];
 					if (done != buildStepLength *
 					    buildSteps)
 					{
@@ -1187,11 +1251,11 @@ int main (string [] args)
 			foreach (col; minCol..maxCol + 1)
 			{
 				auto pos = Coord (row, col);
-				if (pos !in a)
+				if (pos !in locations)
 				{
 					assert (false);
 				}
-				auto owner = a[pos].owner;
+				auto owner = locations[pos].owner.text;
 				auto backgroundColor = 0xEEEEEE;
 				auto sign = "&nbsp;";
 				if (owner != "")
@@ -1199,12 +1263,13 @@ int main (string [] args)
 					backgroundColor = 0xBBBBBB;
 				}
 				auto hoverText = toCoordString (pos);
-				auto buildId = a[pos].buildId;
+				auto buildId =
+				    locations[pos].building.build_id;
 				if (buildId != 0)
 				{
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
-					auto done = buildingDone (pos);
+					auto done = buildingDone[pos];
 					if (done == buildStepLength *
 					    buildSteps)
 					{
@@ -1276,7 +1341,7 @@ int main (string [] args)
 
 		foreach (ref building; buildings)
 		{
-			if (building == Building.init)
+			if (building == BuildingPlan.init)
 			{
 				continue;
 			}

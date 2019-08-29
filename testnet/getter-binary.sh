@@ -5,10 +5,8 @@ curl --get \
      --data-urlencode "account=prospectorsc" \
      --data-urlencode "scope=prospectorsc" \
      --data-urlencode "table=$1" \
-     --data-urlencode "json=true" \
-     --data-urlencode "key_type=uint64" \
-     --data-urlencode "with_block_num=true" \
+     --data-urlencode "key_type=$2" \
+     --data-urlencode "json=false" \
      --compressed \
      "https://mainnet.eos.dfuse.io/v0/state/table" \
-     | ../pretty \
-     > $1.json
+     > $1.binary

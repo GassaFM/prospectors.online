@@ -1,6 +1,6 @@
 #!/bin/bash
 # D language compiler with options
-export dopts="-O -release -inline -boundscheck=off"
+export dopts="-O -release -inline -boundscheck=off -i"
 export dc="dmd ${dopts}"
 
 echo Compiling...
@@ -9,7 +9,7 @@ ${dc} pretty.d || exit 1
 ${dc} extract_token.d || exit 1
 ${dc} generate-map-css.d || exit 1
 pushd mainnet || exit 1
-${dc} rent-price.d || exit 1
+${dc} rent-price.d -I .. || exit 1
 popd || exit 1
 pushd earnings || exit 1
 ${dc} update-logs.d || exit 1
