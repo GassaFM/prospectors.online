@@ -1394,6 +1394,7 @@ int main (string [] args)
 	doHtml (resTemplate[5..6]);
 	doHtml (resTemplate[6..7]);
 	doHtml (resTemplate[1..3] ~ resTemplate[6]);
+	doHtml (resTemplate[3..6]);
 	doHtml (resTemplate[0..7]);
 	doHtmlWorker (resTemplate[7..8]);
 	doHtmlRent ("rent", RentMapType.simple);
