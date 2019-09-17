@@ -41,3 +41,27 @@
   padding: 2px;
   text-align: right;
 }
+
+.land-auction {
+  background-color: #FFFFC0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.land-deal {
+  background-color: #E0FFE0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.land-confiscation {
+  background-color: #FFE0E0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
