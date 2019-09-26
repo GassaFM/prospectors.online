@@ -173,6 +173,10 @@ string auctionClass (int type)
 	{
 		return "confiscation";
 	}
+	else if (type == 9)
+	{
+		return "release";
+	}
 	else
 	{
 		return "unknown";
@@ -204,7 +208,8 @@ int main (string [] args)
 	    "coal", "clay", "ore", "coffee"];
 
 	auto fileName = sha256Of ("account:prospectorsc " ~
-	    "(action:endauction OR action:endlocexpr OR action:endlocsale)")
+	    "(action:endauction OR action:endlocexpr OR action:endlocsale" ~
+	    " OR action:mkfreeloc)")
 	    .format !("%(%02x%)") ~ ".log";
 	auto auctionLog = File (fileName, "rb").byLineCopy.map !(split).array;
 	auctionLog.schwartzSort !(line =>
@@ -358,6 +363,7 @@ int main (string [] args)
 	doHtmlAuctionHistory ("auctions",      x => x == 0);
 	doHtmlAuctionHistory ("deals",         x => x == 1);
 	doHtmlAuctionHistory ("confiscations", x => x == 2);
+	doHtmlAuctionHistory ("releases",      x => x == 9);
 
 	return 0;
 }

@@ -100,25 +100,32 @@ void updateLog (string query)
 
 			foreach (cur; line["matchingActions"].array)
 			{
-				string [] buf;
-				buf ~= timeString;
+				if (cur["loc"].array.empty)
+				{
+					// skip strange mkfreeloc transactions
+					continue;
+				}
 
-				auto auction = cur["auction"].array.front
-				    ["oldJSON"]["object"];
+				auto hasAuction = !cur["auction"].array.empty;
+				auto auction = hasAuction ?
+				    cur["auction"].array.front
+				    ["oldJSON"]["object"] :
+				    parseJSON (`{"type": 9, "price": 0}`);
 				auto locFrom = cur["loc"].array.front
 				    ["oldJSON"]["object"];
 				auto locTo = cur["loc"].array.front
 				    ["newJSON"]["object"];
+
+				string [] buf;
+				buf ~= timeString;
 				buf ~= auction["type"].integer.text;
 				buf ~= locFrom["owner"].str;
-				buf ~= auction["loc_id"].integer.text;
+				buf ~= locFrom["id"].integer.text;
 				auto target = locTo["owner"].str;
-/*
 				if (target == "")
 				{
 					target = "(free)";
 				}
-*/
 				buf ~= target;
 				buf ~= auction["price"].integer.text;
 

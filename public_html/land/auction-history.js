@@ -64,10 +64,13 @@ function sortTable (table, col, dir, type) {
 			return ((a[col] < b[col]) ? -dir : +dir) * mult;
 		}
 
+/*
 		if (a[1 * 3] != b[1 * 3]) {
 			return (a[1 * 3] < b[1 * 3]) ? +1 : -1;
 		}
 		return (a[2 * 3] < b[2 * 3]) ? +1 : -1;
+*/
+		return 0;
 	});
 	putData (body, data);
 }
@@ -90,7 +93,7 @@ function putData (body, data) {
 	body.querySelectorAll ('tr').forEach ((row, i) => {
 		const line = data[i];
 		row.querySelectorAll ('td').forEach ((cell, j) => {
-			if (j > 0) {
+			if (j >= 0) {
 				cell.innerText = line[j * 3 + 0];
 				cell.setAttribute ('class', line[j * 3 + 1]);
 				cell.setAttribute ('style', line[j * 3 + 2]);

@@ -15,6 +15,11 @@ pushd earnings || exit 1
 ${dc} update-logs.d || exit 1
 ${dc} earnings-all.d transaction.d || exit 1
 popd || exit 1
+pushd land || exit 1
+${dc} update-logs-auction.d || exit 1
+${dc} past-auctions.d || exit 1
+${dc} filter-equal.d || exit 1
+popd || exit 1
 
 echo Building...
 ./generate-map-css || exit 1
