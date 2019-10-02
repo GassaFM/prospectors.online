@@ -192,13 +192,13 @@ int [] toColorArray (string code)
 	return code.drop (1).chunks (2).map !(x => to !(int) (x, 16)).array;
 }
 
-int [] mixColor (T) (int [] a, int [] b, T lo, T me, T hi)
+int [] mixColor (T) (const int [] a, const int [] b, T lo, T me, T hi)
 {
-	return zip (a, b).map !(v =>
-	    (v[0] * (hi - me) + v[1] * (me - lo)) / (hi - lo)).array;
+	return zip (a, b).map !(v => ((v[0] * (hi - me) + v[1] * (me - lo)) /
+	    (hi - lo)).to !(int)).array;
 }
 
-int toColorInt (int [] c)
+int toColorInt (const int [] c)
 {
 	int res = 0;
 	foreach (ref e; c)
@@ -431,6 +431,20 @@ int main (string [] args)
 		auto secLeft = rentTime - nowUnix;
 		auto realDaysLeft = floor (secLeft / (1.0L * 60 * 60 * 24));
 		return realDaysLeft.to !(int);
+	}
+
+	foreach (row; minRow..maxRow + 1)
+	{
+		foreach (col; minCol..maxCol + 1)
+		{
+			auto pos = Coord (row, col);
+			if (pos !in locations ||
+			    (row == maxRow && col == maxCol))
+			{
+				locations[pos] = locElement ();
+				locations[pos].name = "(does not exist)";
+			}
+		}
 	}
 
 	foreach (row; minRow..maxRow + 1)
