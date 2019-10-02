@@ -438,8 +438,7 @@ int main (string [] args)
 		foreach (col; minCol..maxCol + 1)
 		{
 			auto pos = Coord (row, col);
-			if (pos !in locations ||
-			    (row == maxRow && col == maxCol))
+			if (pos !in locations)
 			{
 				locations[pos] = locElement ();
 				locations[pos].name = "(does not exist)";
