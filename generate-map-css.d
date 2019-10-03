@@ -17,8 +17,8 @@ void main ()
 	writeln (`}`);
 	writeln (``);
 	writeln (`.coord {`);
-	writeln (`  width: 1.923%;`);
-	writeln (`  height: 1.923%;`);
+	writeln (`  width: 1.785%;`);
+	writeln (`  height: 1.785%;`);
 	writeln (`  font-weight: bold;`);
 	writeln (`  font-size: 12px;`);
 	writeln (`  border-style: solid;`);
