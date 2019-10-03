@@ -814,6 +814,7 @@ int main (string [] args)
 		real midRow = 0.0;
 		real midCol = 0.0;
 		real midDen = 0.0;
+		int totalOnBorder = 0;
 		foreach (row; minRow..maxRow + 1)
 		{
 			file.writeln (`<tr>`);
@@ -834,6 +835,11 @@ int main (string [] args)
 					auto name = resource.name;
 					auto fun = resource.fun;
 					auto divisor = resource.divisor;
+					if (row == minRow || row == maxRow ||
+					    col == minCol || col == maxCol)
+					{
+						totalOnBorder += fun (pos);
+					}
 					auto value = min (fun (pos), 99).text;
 					midRow += row * fun (pos);
 					midCol += col * fun (pos);
@@ -866,6 +872,8 @@ int main (string [] args)
 		file.writeln (`</tbody>`);
 		file.writeln (`</table>`);
 		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
+		file.writefln (`<p>Workers on the border: %d.</p>`,
+		    totalOnBorder);
 		file.writefln (`<p>Average worker position: ` ~
 		    `%.2f/%.2f.</p>`, midCol / midDen, midRow / midDen);
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
