@@ -19,6 +19,8 @@ import transaction;
 
 alias toUpper = std.ascii.toUpper;
 
+alias ItemPlan = Tuple !(long, q{id}, string, q{name}, int, q{weight});
+
 immutable int colorThreshold = 0x80;
 
 auto parseBinary (T) (ref ubyte [] buffer)
@@ -221,6 +223,8 @@ struct BuildingPlan
 	}
 }
 
+alias ColorPlan = Tuple !(int [], q{loColor}, int [], q{hiColor});
+
 int row (const ref locElement loc)
 {
 	return cast (short) (loc.id >> 16);
@@ -236,6 +240,11 @@ int main (string [] args)
 	immutable int buildStepLength =
 	    (args.length > 1 && args[1] == "testnet") ? 1500 : 15000;
 	immutable int buildSteps = 3;
+
+	auto itemList = [ItemPlan.init] ~
+	    File ("../items.txt").byLineCopy.map !(split)
+	    .map !(t => ItemPlan (t[0].to !(long), t[1], t[2].to !(int)))
+	    .array;
 
 	int rentPrice = -1;
 
@@ -383,6 +392,16 @@ int main (string [] args)
 
 	auto allianceLogoColor = File ("../logo-colors.txt", "rt").byLineCopy
 	    .map !(line => line.splitter.map !(to !(int)).array).array;
+
+	ColorPlan [int] resourceColors;
+	foreach (line; File ("../resource-colors.txt", "rt").byLineCopy)
+	{
+		auto t = line.split;
+		auto id = t[0].to !(int);
+		auto loColor = t[1].toColorArray;
+		auto hiColor = t[2].toColorArray;
+		resourceColors[id] = ColorPlan (loColor, hiColor);
+	}
 
 	int [Coord] buildingDone;
 
@@ -562,8 +581,8 @@ int main (string [] args)
 
 	int [string] resourceLimit;
 	resourceLimit["gold"]   = 32_000_000;
-	resourceLimit["wood"]   = 19_000_000;
-	resourceLimit["stone"]  = 22_000_000;
+	resourceLimit["wood"]   = 39_000_000;
+	resourceLimit["stone"]  = 53_000_000;
 	resourceLimit["coal"]   = 16_000_000;
 	resourceLimit["clay"]   = 16_000_000;
 	resourceLimit["ore"]    = 32_000_000;
@@ -665,6 +684,13 @@ int main (string [] args)
 				if (owner != "")
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
+				}
+				auto curAlliance = (owner == "") ? "" :
+				    accounts[owner].alliance.text;
+				if (curAlliance != "")
+				{
+					hoverText ~= `&#10;alliance: ` ~
+					    curAlliance;
 				}
 				file.writefln (`<td class="plot %s-%s" ` ~
 				    `title="%s">%s</td>`,
@@ -889,6 +915,13 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
+				auto curAlliance = (owner == "") ? "" :
+				    accounts[owner].alliance.text;
+				if (curAlliance != "")
+				{
+					hoverText ~= `&#10;alliance: ` ~
+					    curAlliance;
+				}
 				file.writefln (`<td class="plot %s-%s" ` ~
 				    `title="%s">%s</td>`,
 				    bestName, classString (bestValue),
@@ -948,6 +981,13 @@ int main (string [] args)
 				if (owner != "")
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
+				}
+				auto curAlliance = (owner == "") ? "" :
+				    accounts[owner].alliance.text;
+				if (curAlliance != "")
+				{
+					hoverText ~= `&#10;alliance: ` ~
+					    curAlliance;
 				}
 				auto daysLeft = "&nbsp;";
 				if (type != RentMapType.simple && owner != "")
@@ -1349,6 +1389,13 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
+				auto curAlliance = (owner == "") ? "" :
+				    accounts[owner].alliance.text;
+				if (curAlliance != "")
+				{
+					hoverText ~= `&#10;alliance: ` ~
+					    curAlliance;
+				}
 				string whiteFont;
 				immutable int colorThreshold = 0x80;
 				if (buildId != 0 &&
@@ -1445,6 +1492,11 @@ int main (string [] args)
 		writeCoordRow (file);
 
 		int [string] numAlliancePlots;
+		foreach (key, value; alliances)
+		{
+			numAlliancePlots[key] = 0;
+		}
+
 		foreach (row; minRow..maxRow + 1)
 		{
 			file.writeln (`<tr>`);
@@ -1508,6 +1560,155 @@ int main (string [] args)
 		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
 		    `to see details.</p>`);
+
+		auto resCodes = [2, 3, 31, 4, 5, 6];
+
+		long [string] [long] resByAlliance;
+		foreach (code; resCodes)
+		{
+			resByAlliance[code] = null;
+		}
+
+		foreach (ref location; locations)
+		{
+			auto owner = location.owner.text;
+			if (owner == "")
+			{
+				continue;
+			}
+
+			auto alliance = accounts[owner].alliance.text;
+			if (alliance == "")
+			{
+				continue;
+			}
+
+			foreach (stuff; location.storage)
+			{
+				auto typeId = stuff.type_id;
+				auto amount = stuff.amount;
+				resByAlliance[typeId][alliance] += amount;
+			}
+		}
+
+		int [string] numMembers;
+
+		foreach (ref account; accounts)
+		{
+			auto alliance = account.alliance.text;
+			if (alliance == "")
+			{
+				continue;
+			}
+
+			numMembers[alliance] += 1;
+			foreach (purchase; account.purchases)
+			{
+				auto typeId = purchase.stuff.type_id;
+				auto amount = purchase.stuff.amount;
+				resByAlliance[typeId][alliance] += amount;
+			}
+		}
+
+		long [long] resMost;
+		foreach (code; resCodes)
+		{
+			resMost[code] = 1;
+			foreach (key, value; resByAlliance[code])
+			{
+				resMost[code] = max (resMost[code], value);
+			}
+		}
+
+		{
+			auto alliancesOrdered =
+			    numAlliancePlots.byKeyValue ().array;
+			alliancesOrdered.schwartzSort !(line =>
+			    tuple (-line.value, line.key));
+			file.writeln (`<h2>Alliances:</h2>`);
+			file.writeln (`<p>The table below shows the total ` ~
+			    `amount of each resource in stores ` ~
+			    `and purchases, including stuff ` ~
+			    `locked up in orders.</p>`);
+			file.writeln (`<table id="alliances-list" ` ~
+			    `border="1px" padding="2px">`);
+
+			file.writeln (`<thead>`);
+			file.writeln (`<tr>`);
+			file.writefln (`<th>#</th>`);
+			file.writefln (`<th class="plot" ` ~
+			    `width="16px">&nbsp;</th>`);
+			file.writefln (`<th class="header" ` ~
+			    `id="col-alliance">Alliance</th>`);
+			file.writefln (`<th class="header" ` ~
+			    `id="col-plots">Plots</th>`);
+			file.writefln (`<th class="header" ` ~
+			    `id="col-members">Members</th>`);
+			foreach (int id; resCodes)
+			{
+				auto itemName = itemList[id].name;
+				auto itemNameUpper = itemName[0].toUpper ~
+				    itemName[1..$];
+				file.writefln (`<th class="header" ` ~
+				    `id="col-%s">%s</th>`,
+				    itemName, itemNameUpper);
+			}
+			file.writeln (`</tr>`);
+			file.writeln (`</thead>`);
+			file.writeln (`<tbody>`);
+
+			foreach (i, t; alliancesOrdered)
+			{
+				auto curAlliance = t.key;
+				auto allianceColor = allianceLogoColor
+				    [alliances[curAlliance].logo].toColorInt;
+				file.writeln (`<tr>`);
+				file.writeln (`<td style="text-align:right">`,
+				    (i + 1), `</td>`);
+				file.writefln (`<td class="plot" ` ~
+				    `width="16px" ` ~
+				    `style="background-color:#%06X">` ~
+				    `&nbsp;</td>`, allianceColor);
+				file.writeln (`<td style='font-family:` ~
+				    `"Courier New", Courier, monospace'>`,
+				    curAlliance, `</td>`);
+				file.writeln (`<td style="text-align:right">`,
+				    t.value, `</td>`);
+				file.writeln (`<td style="text-align:right">`,
+				    numMembers[t.key], `</td>`);
+				foreach (int id; resCodes)
+				{
+					auto num =
+					    curAlliance in resByAlliance[id] ?
+					    resByAlliance[id][curAlliance] : 0;
+					auto backgroundColor = num ? mixColor
+					    (resourceColors[id].loColor,
+					    resourceColors[id].hiColor,
+					    0L, resByAlliance[id][curAlliance],
+					    resMost[id]).toColorInt : 0xFFFFFF;
+					string whiteFont;
+					immutable int colorThreshold = 0x80;
+					if (num > 0 &&
+					    resourceColors[id].hiColor
+					    .all !(c => c < colorThreshold))
+					{
+						whiteFont ~= `;color:#FFFFFF`;
+						whiteFont ~=
+						    `;border-color:#000000`;
+					}
+					file.writefln (`<td style=` ~
+					    `"text-align:right;` ~
+					    `background-color:#%06X%s">` ~
+					    `%s</td>`, backgroundColor,
+					    whiteFont, toAmountString (num,
+					    false, false));
+				}
+				file.writeln (`</tr>`);
+			}
+			file.writeln (`</tbody>`);
+			file.writeln (`</table>`);
+			file.writeln (`<script src="alliances.js"></script>`);
+		}
 
 		file.writefln (`<p><a href="..">Back to main page</a></p>`);
 		file.writeln (`</body>`);
