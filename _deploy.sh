@@ -25,3 +25,5 @@ echo Building...
 ./generate-map-css || exit 1
 cp map.css public_html/maps || exit 1
 cp map.css public_html/testnet/maps || exit 1
+
+cp public_html/maps/*.js public_html/testnet/maps || exit 1
