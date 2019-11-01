@@ -147,6 +147,8 @@ int main (string [] args)
 
 	long [long] total;
 	long [string] [long] num;
+	string [string] alliance;
+	alliance[""] = "";
 
 	auto locJSON = File ("loc.binary", "rb")
 	    .byLine.joiner.parseJSON;
@@ -184,6 +186,7 @@ int main (string [] args)
 		}
 
 		auto owner = account.name.text;
+		alliance[owner] = account.alliance.text;
 		foreach (purchase; account.purchases)
 		{
 			auto typeId = purchase.stuff.type_id;
@@ -225,28 +228,36 @@ int main (string [] args)
 		file.writefln (`<p><a href="stores.html">` ~
 		    `Back to stores page</a></p>`);
 		file.writeln (`<table border="1px" padding="2px">`);
-		file.writeln (`<tbody>`);
+		file.writeln (`<thead>`);
 
 		file.writeln (`<tr>`);
 		file.writefln (`<th>#</th>`);
 		file.writefln (`<th class="plot" ` ~
 		    `width="16px">&nbsp;</th>`);
 		file.writefln (`<th>Account</th>`);
+		file.writefln (`<th>Alliance</th>`);
 		file.writefln (`<th>Amount of %s</th>`, itemName);
 		file.writeln (`</tr>`);
+		file.writeln (`</thead>`);
+		file.writeln (`<tbody>`);
 
 		file.writeln (`<tr>`);
 		file.writeln (`<td style="text-align:right">` ~
 		    `&nbsp;</td>`);
 		file.writefln (`<td class="plot" width="16px">` ~
 		    `&nbsp;</td>`);
-		file.writeln (`<td style="font-weight:bold">` ~
+		file.writeln (`<td style='font-weight:bold;` ~
+		    `font-family:"Courier New", Courier, monospace;` ~
+		    `text-align:center'>` ~
 		    `Total</td>`);
+		file.writefln (`<td>&nbsp;</td>`);
 		file.writeln (`<td style="text-align:right">`,
 		    toAmountString (total[id],
 		    !isResource (id) || itemName == "raw-gold", false),
 		    `</td>`);
 		file.writeln (`</tr>`);
+
+		file.writeln (`<tr height="2px"></tr>`);
 
 		foreach (i, ref owner; a)
 		{
@@ -260,8 +271,14 @@ int main (string [] args)
 			    `style="background-color:#%06X">` ~
 			    `&nbsp;</td>`, backgroundColor);
 			file.writeln (`<td style='font-family:` ~
-			    `"Courier New", Courier, monospace'>`,
+			    `"Courier New", Courier, monospace;` ~
+			    `text-align:center'>`,
 			    owner == "" ? "(free plots)" : owner,
+			    `</td>`);
+			file.writeln (`<td style='font-family:` ~
+			    `"Courier New", Courier, monospace;` ~
+			    `text-align:center'>`,
+			    alliance[owner],
 			    `</td>`);
 			file.writeln (`<td style="text-align:right">`,
 			    toAmountString (num[id][owner],
