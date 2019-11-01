@@ -17,6 +17,8 @@ import std.typecons;
 import prospectorsc_abi;
 import transaction;
 
+alias toUpper = std.ascii.toUpper;
+
 immutable int colorThreshold = 0x80;
 
 auto parseBinary (T) (ref ubyte [] buffer)
@@ -198,15 +200,7 @@ int [] mixColor (T) (const int [] a, const int [] b, T lo, T me, T hi)
 	    (hi - lo)).to !(int)).array;
 }
 
-int toColorInt (const int [] c)
-{
-	int res = 0;
-	foreach (ref e; c)
-	{
-		res = (res << 8) | e;
-	}
-	return res;
-}
+alias toColorInt = r => r.fold !((x, y) => (x << 8) | y);
 
 struct BuildingPlan
 {
@@ -258,6 +252,42 @@ int main (string [] args)
 				assert (false);
 			}
 			rentPrice = curStat.rent_price.to !(int) * 30;
+		}
+	}
+
+	allianceElement [string] alliances;
+
+	{
+		auto allianceJSON = File ("alliance.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; allianceJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curAlliance = hex.parseBinary !(allianceElement);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			alliances[curAlliance.name.text] = curAlliance;
+		}
+	}
+
+	accountElement [string] accounts;
+
+	{
+		auto accountJSON = File ("account.binary", "rb")
+		    .byLine.joiner.parseJSON;
+		foreach (ref row; accountJSON["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto curAccount = hex.parseBinary !(accountElement);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+			accounts[curAccount.name.text] = curAccount;
 		}
 	}
 
@@ -351,9 +381,8 @@ int main (string [] args)
 	auto buildings = BuildingPlan.init ~ File ("../buildings.txt", "rt")
 	    .byLineCopy.map !(line => BuildingPlan (line)).array;
 
-	int calcBuildingDone () (auto ref Coord pos)
-	{
-	}
+	auto allianceLogoColor = File ("../logo-colors.txt", "rt").byLineCopy
+	    .map !(line => line.splitter.map !(to !(int)).array).array;
 
 	int [Coord] buildingDone;
 
@@ -1407,6 +1436,84 @@ int main (string [] args)
 		file.writeln (`</html>`);
 	}
 
+	void doHtmlAlliances (string name)
+	{
+		auto title = name;
+
+		auto file = File (title ~ ".html", "wt");
+		writeHtmlHeader (file, title);
+		writeCoordRow (file);
+
+		int [string] numAlliancePlots;
+		foreach (row; minRow..maxRow + 1)
+		{
+			file.writeln (`<tr>`);
+			file.writeln (`<td class="coord">`, row, `</td>`);
+			foreach (col; minCol..maxCol + 1)
+			{
+				auto pos = Coord (row, col);
+				if (pos !in locations)
+				{
+					assert (false);
+				}
+				auto owner = locations[pos].owner.text;
+				auto curAlliance = (owner == "") ? "" :
+				    accounts[owner].alliance.text;
+				auto backgroundColor = (owner == "") ?
+				    0xEEEEEE : toColorHash (owner);
+				auto hoverText = toCoordString (pos);
+				auto allianceCode = "&nbsp;";
+				string whiteFont;
+				if (owner != "")
+				{
+					hoverText ~= `&#10;owner: ` ~ owner;
+				}
+				if (curAlliance != "")
+				{
+					numAlliancePlots[curAlliance] += 1;
+					auto allianceColor = allianceLogoColor
+					    [alliances[curAlliance].logo];
+
+					immutable int colorThreshold = 0x80;
+					if (allianceColor.all !(c =>
+						    c < colorThreshold))
+					{
+						whiteFont ~= `;color:#FFFFFF`;
+						whiteFont ~=
+						    `;border-color:#000000`;
+					}
+
+					hoverText ~= `&#10;alliance: ` ~
+					    curAlliance;
+					allianceCode = "" ~
+					    curAlliance[0].toUpper ~
+					    curAlliance[$ - 1].toUpper;
+					backgroundColor =
+					    allianceColor.toColorInt;
+				}
+				file.writefln (`<td class="plot" ` ~
+				    `style="font-size:12px;` ~
+				    `background-color:#%06X%s" ` ~
+				    `title="%s">%s</td>`,
+				    backgroundColor, whiteFont,
+				    hoverText, allianceCode);
+			}
+			file.writeln (`<td class="coord">`, row, `</td>`);
+			file.writeln (`</tr>`);
+		}
+		writeCoordRow (file);
+
+		file.writeln (`</tbody>`);
+		file.writeln (`</table>`);
+		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
+		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
+		    `to see details.</p>`);
+
+		file.writefln (`<p><a href="..">Back to main page</a></p>`);
+		file.writeln (`</body>`);
+		file.writeln (`</html>`);
+	}
+
 	doHtml (resTemplate[0..1]);
 	doHtml (resTemplate[1..2]);
 	doHtml (resTemplate[2..3]);
@@ -1422,6 +1529,7 @@ int main (string [] args)
 	doHtmlRent ("rent-days", RentMapType.daysLeft);
 	doHtmlRent ("auction", RentMapType.auction);
 	doHtmlBuildings ();
+	doHtmlAlliances ("alliances");
 
 	return 0;
 }

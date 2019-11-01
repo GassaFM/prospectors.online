@@ -9,6 +9,7 @@ alias t_byte = uint8;
 alias t_coord = int32;
 alias t_health = int32;
 alias t_job = int16;
+alias t_logo = uint32;
 alias t_name = Name;
 alias t_skill = int16;
 alias t_type = int16;
@@ -25,6 +26,20 @@ struct AccountModel
 	Name referer;
 	t_balance balance;
 	t_balance referer_fee;
+	t_name alliance;
+	uint64 r4;
+}
+
+struct AllianceModel
+{
+	t_name name;
+	t_name owner;
+	t_utime cr_time;
+	t_amount members;
+	t_amount request;
+	t_logo logo;
+	uint64 r1;
+	uint64 r2;
 	uint64 r3;
 	uint64 r4;
 }
@@ -88,7 +103,7 @@ struct MarketModel
 	t_name owner;
 	Stuff stuff;
 	t_amount price;
-	uint64 r1;
+	t_name alliance;
 	uint64 r2;
 }
 
@@ -104,7 +119,7 @@ struct OrderModel
 	t_amount item_prop;
 	ID item_tag;
 	int8 state;
-	uint64 r1;
+	t_name alliance;
 	uint64 r2;
 }
 
@@ -176,6 +191,13 @@ struct WorldModel
 	uint64 r2;
 	uint64 r3;
 	uint64 r4;
+}
+
+struct accptmember
+{
+	t_name account;
+	t_name aname;
+	t_name member;
 }
 
 struct arrestuser
@@ -255,6 +277,11 @@ struct endlocsale
 	ID loc_id;
 }
 
+struct exitmember
+{
+	t_name account;
+}
+
 struct initstat
 {
 }
@@ -263,6 +290,14 @@ struct login
 {
 	t_name name;
 	t_name referer;
+}
+
+struct mkalliance
+{
+	t_name account;
+	t_name aname;
+	t_logo logo;
+	t_amount price;
 }
 
 struct mkauction
@@ -282,6 +317,7 @@ struct mkbuildord
 	ID loc_id;
 	t_amount gold;
 	t_utime duration;
+	t_name alliance;
 }
 
 struct mkbuyord
@@ -290,6 +326,7 @@ struct mkbuyord
 	t_amount gold;
 	t_type type_id;
 	t_amount amount;
+	t_name alliance;
 }
 
 struct mkcells
@@ -326,6 +363,7 @@ struct mkmakeord
 	t_amount gold;
 	t_type type_id;
 	t_amount amount;
+	t_name alliance;
 }
 
 struct mkmineord
@@ -334,6 +372,7 @@ struct mkmineord
 	t_amount gold;
 	t_type type_id;
 	t_amount duration;
+	t_name alliance;
 }
 
 struct mkpurchase
@@ -351,6 +390,7 @@ struct mkpurchord
 	t_amount gold;
 	Stuff stuff;
 	ID dest_loc_id;
+	t_name alliance;
 }
 
 struct mksale
@@ -358,6 +398,7 @@ struct mksale
 	ID loc_id;
 	Stuff stuff;
 	t_amount price;
+	t_name alliance;
 }
 
 struct mktransord
@@ -366,6 +407,7 @@ struct mktransord
 	t_amount gold;
 	Stuff stuff;
 	ID dest_loc_id;
+	t_name alliance;
 }
 
 struct mkworld
@@ -440,6 +482,12 @@ struct rentloc
 	t_amount days;
 }
 
+struct reqmember
+{
+	t_name account;
+	t_name aname;
+}
+
 struct rmauction
 {
 	ID loc_id;
@@ -448,6 +496,13 @@ struct rmauction
 struct rmbuild
 {
 	ID loc_id;
+}
+
+struct rmmember
+{
+	t_name account;
+	t_name aname;
+	t_name member;
 }
 
 struct rmorder
@@ -492,6 +547,13 @@ struct rnworker
 	string name;
 }
 
+struct setrole
+{
+	t_name account;
+	t_name member;
+	uint8 role;
+}
+
 struct takeoff
 {
 	ID worker_id;
@@ -513,6 +575,7 @@ struct withdraw
 }
 
 alias accountElement = AccountModel;
+alias allianceElement = AllianceModel;
 alias auctionElement = AuctionModel;
 alias locElement = LocModel;
 alias marketElement = MarketModel;
