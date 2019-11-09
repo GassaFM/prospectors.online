@@ -196,8 +196,8 @@ int main (string [] args)
 
 		int [string] resourceLimit;
 		resourceLimit["gold"]  = 32_000_000;
-		resourceLimit["wood"]  = 19_000_000;
-		resourceLimit["stone"] = 22_000_000;
+		resourceLimit["wood"]  = 39_000_000;
+		resourceLimit["stone"] = 53_000_000;
 		resourceLimit["coal"]  = 16_000_000;
 		resourceLimit["clay"]  = 16_000_000;
 		resourceLimit["ore"]   = 32_000_000;
@@ -265,6 +265,10 @@ int main (string [] args)
 			{
 				continue;
 			}
+			if (line[2] != "prospectorsc") // exclude tippedtipped
+			{
+				continue;
+			}
 
 			auto hexData = line[5].chunks (2)
 			    .map !(x => to !(ubyte) (x, 16)).array;
@@ -290,6 +294,10 @@ int main (string [] args)
 			auto moment = SysTime.fromSimpleString
 			    (line[0..2].join (" ") ~ "Z");
 			if (nowTime < moment)
+			{
+				continue;
+			}
+			if (line[2] != "prospectorsg") // exclude tippedtipped
 			{
 				continue;
 			}
@@ -425,6 +433,11 @@ int main (string [] args)
 		file.close ();
 	}
 
+	doHtmlBalances ("alliance-ek");
+	doHtmlBalances ("alliance-ek-plus");
+	doHtmlBalances ("alliance-support");
+	doHtmlBalances ("alliance-tgt");
+	doHtmlBalances ("alliance-b");
 	doHtmlBalances ("all");
 
 	return 0;
