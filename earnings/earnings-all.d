@@ -273,7 +273,7 @@ int main (string [] args)
 			auto hexData = line[5].chunks (2)
 			    .map !(x => to !(ubyte) (x, 16)).array;
 			auto from = hexData.parseBinary !(Name);
-			if (from.toString != line[4])
+			if (!line[4].split ("+").canFind (from.toString))
 			{
 				assert (false);
 			}
@@ -305,6 +305,10 @@ int main (string [] args)
 			auto hexData = line[5].chunks (2)
 			    .map !(x => to !(ubyte) (x, 16)).array;
 			auto from = hexData.parseBinary !(Name);
+			if (!line[4].split ("+").canFind (from.toString))
+			{
+				assert (false);
+			}
 			auto to = hexData.parseBinary !(Name);
 			if (to.toString != "prospectorsc")
 			{
