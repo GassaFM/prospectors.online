@@ -12,5 +12,5 @@ source ./getter-binary.sh stat uint64 || exit 1
 source ./getter-binary.sh auction uint64 || exit 1
 ../maps || exit 1
 mv *.html $destination/maps/ || exit 1
-#./rent-price || exit 1
-#mv rent-price.html $destination/ || exit 1
+../mainnet/rent-price || exit 1
+mv rent-price.html $destination/ || exit 1

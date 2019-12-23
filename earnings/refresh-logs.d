@@ -11,7 +11,7 @@ import std.range;
 import std.stdio;
 import std.string;
 
-void updateLog (string query)
+void updateLog (string endPoint, string query)
 {
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
 	auto sha256 = query.sha256Of.format !("%(%02x%)");
@@ -33,7 +33,7 @@ void updateLog (string query)
 	{
 		writeln ("updating ", query, ", cursor = ", cursor);
 		auto raw = post
-		    ("https://mainnet.eos.dfuse.io/v0/search/transactions",
+		    (endPoint,
 		    ["q": query,
 		    "start_block": "0",
 		    "limit": "100",
@@ -81,8 +81,8 @@ void updateLog (string query)
 
 int main (string [] args)
 {
-	updateLog ("account:prospectorsc action:withdraw");
-	updateLog ("account:prospectorsg " ~
+	updateLog (args[1], "account:prospectorsc action:withdraw");
+	updateLog (args[1], "account:prospectorsg " ~
 	    "action:transfer data.to:prospectorsc");
 	return 0;
 }

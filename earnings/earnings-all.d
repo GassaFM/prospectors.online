@@ -35,6 +35,9 @@ auto getWithData (Conn) (string url, string [string] data, Conn conn)
 	    line.key ~ "=" ~ line.value).join ("&"), conn);
 }
 
+string endPointBlockId;
+string endPointTable;
+
 long getBlockNumber (TimeType) (TimeType t)
 {
 	auto fileName = "block_by_unix_time." ~ t.toUnixTime.text ~ ".json";
@@ -47,7 +50,7 @@ long getBlockNumber (TimeType) (TimeType t)
 	}
 
 	auto raw = post
-	    ("https://mainnet.eos.dfuse.io/v0/block_id/by_time",
+	    (endPointBlockId,
 	    ["time": t.toISOExtString,
 	    "comparator": "gte"],
 	    connection);
@@ -72,7 +75,7 @@ JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 	try
 	{
 		auto raw = getWithData
-		    ("https://mainnet.eos.dfuse.io/v0/state/table",
+		    (endPointTable,
 		    ["account": "prospectorsc",
 		    "scope": "prospectorsc",
 		    "table": tableName,
@@ -124,6 +127,9 @@ string toCommaNumber (real value, bool doStrip)
 int main (string [] args)
 {
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
+	endPointBlockId = args[1];
+	endPointTable = args[2];
+	auto isTestnet = (args.length > 3 && args[3] == "testnet");
 
 	connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
@@ -186,8 +192,7 @@ int main (string [] args)
 			}
 		}
 
-		immutable int buildStepLength =
-		    (args.length > 1 && args[1] == "testnet") ? 1500 : 15000;
+		immutable int buildStepLength = isTestnet ? 1500 : 15000;
 		immutable int buildSteps = 3;
 
 		long [string] plotsNum;
@@ -196,10 +201,10 @@ int main (string [] args)
 
 		int [string] resourceLimit;
 		resourceLimit["gold"]  = 32_000_000;
-		resourceLimit["wood"]  = 39_000_000;
+		resourceLimit["wood"]  = 50_000_000;
 		resourceLimit["stone"] = 53_000_000;
-		resourceLimit["coal"]  = 16_000_000;
-		resourceLimit["clay"]  = 16_000_000;
+		resourceLimit["coal"]  = 23_000_000;
+		resourceLimit["clay"]  = 18_000_000;
 		resourceLimit["ore"]   = 32_000_000;
 
 		foreach (const ref location; locations)
@@ -318,8 +323,8 @@ int main (string [] args)
 			auto pglId = hexData.parseBinary !(ulong);
 			auto memoEmpty = hexData.parseBinary !(ubyte);
 			if (!hexData.empty)
-			{
-				assert (false);
+			{ // just the memo is not empty, relax!
+//				assert (false);
 			}
 			if (pgl % 10 != 0)
 			{
@@ -437,12 +442,10 @@ int main (string [] args)
 		file.close ();
 	}
 
-	doHtmlBalances ("alliance-ek");
-	doHtmlBalances ("alliance-ek-plus");
-	doHtmlBalances ("alliance-support");
-	doHtmlBalances ("alliance-tgt");
-	doHtmlBalances ("alliance-b");
-	doHtmlBalances ("all");
+	foreach (name; args.drop (3 + isTestnet).chain (only ("all")))
+	{
+		doHtmlBalances (name);
+	}
 
 	return 0;
 }

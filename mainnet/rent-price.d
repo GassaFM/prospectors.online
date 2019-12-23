@@ -181,7 +181,7 @@ int main (string [] args)
 	file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
 	file.writefln (`<p>Tip: hover the mouse over table cells ` ~
 	    `to see explanations.</p>`);
-	file.writefln (`<p><a href="..">Back to main page</a></p>`);
+	file.writefln (`<p><a href="index.html">Back to main page</a></p>`);
 	file.writeln (`</body>`);
 	file.writeln (`</html>`);
 

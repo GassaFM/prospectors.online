@@ -11,8 +11,9 @@ import std.range;
 import std.stdio;
 import std.string;
 
-immutable string queryForm = `{"query": "{
-  searchTransactionsForward(query: \"%s\", limit: 100, cursor: \"%s\") {
+immutable string queryForm = (`{"query": "{
+  searchTransactionsForward(query: \"%s\", limit: 100, cursor: \"%s\", ` ~
+    `irreversibleOnly: true) {
     cursor
     results {
       trace {
@@ -37,7 +38,7 @@ immutable string queryForm = `{"query": "{
       }
     }
   }
-}"}`.splitter ('\n').map !(strip).join (' ');
+}"}`).splitter ('\n').map !(strip).join (' ');
 
 auto getWithData (Conn) (string url, string [string] data, Conn conn)
 {
@@ -54,7 +55,7 @@ string maybeStr () (const auto ref JSONValue value)
 	return value.str;
 }
 
-void updateLog (string query)
+void updateLog (string endPoint, string query)
 {
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
 	auto sha256 = query.sha256Of.format !("%(%02x%)");
@@ -77,8 +78,7 @@ void updateLog (string query)
 	{
 		auto filledQuery = format (queryForm, query, cursor);
 		writeln ("updating ", query, ", cursor = ", cursor);
-		auto raw = post ("https://mainnet.eos.dfuse.io/graphql",
-		    filledQuery, connection);
+		auto raw = post (endPoint, filledQuery, connection);
 		auto data = raw.parseJSON["data"]["searchTransactionsForward"];
 		auto newCursor = data["cursor"].maybeStr;
 		if (newCursor == "")
@@ -161,6 +161,6 @@ void updateLog (string query)
 
 int main (string [] args)
 {
-	updateLog (args.drop (1).join (" "));
+	updateLog (args[1], args.drop (2).join (" "));
 	return 0;
 }

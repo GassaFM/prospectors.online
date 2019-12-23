@@ -581,12 +581,18 @@ int main (string [] args)
 
 	int [string] resourceLimit;
 	resourceLimit["gold"]   = 32_000_000;
-	resourceLimit["wood"]   = 39_000_000;
+	resourceLimit["wood"]   = 50_000_000;
 	resourceLimit["stone"]  = 53_000_000;
-	resourceLimit["coal"]   = 16_000_000;
-	resourceLimit["clay"]   = 16_000_000;
+	resourceLimit["coal"]   = 23_000_000;
+	resourceLimit["clay"]   = 18_000_000;
 	resourceLimit["ore"]    = 32_000_000;
 	resourceLimit["coffee"] =    300_000;
+
+	int [string] richLimit;
+	richLimit["gold"]       = 12_000_000;
+	richLimit["coal"]       = 12_000_000;
+	richLimit["clay"]       = 12_000_000;
+	richLimit["ore"]        = 12_000_000;
 
 	ResTemplate [] resTemplate;
 	resTemplate ~= ResTemplate ("gold",
@@ -635,6 +641,9 @@ int main (string [] args)
 			totalQuantity[name] = 0;
 		}
 
+		bool showRich = (resources.length == 1) &&
+		    ((resources.front.name in richLimit) !is null);
+
 		foreach (row; minRow..maxRow + 1)
 		{
 			file.writeln (`<tr>`);
@@ -666,8 +675,8 @@ int main (string [] args)
 						plotsByOwner[owner][name] ~=
 						    pos;
 					}
-					auto isRichPlot = (fun (pos) * 2 >
-					    resourceLimit[name]);
+					auto isRichPlot = showRich &&
+					    (fun (pos) > richLimit[name]);
 					richPlots[owner][name] += isRichPlot;
 					totalRichPlots[name] += isRichPlot;
 					totalUnknownPlots[name] +=
@@ -711,9 +720,6 @@ int main (string [] args)
 		{
 			auto name = resources.front.name;
 			auto fun = resources.front.fun;
-			bool showRich = (name != "wood" &&
-			    name != "stone" &&
-			    name != "coffee");
 
 			auto plotOwners = quantity.byKey ().array;
 			if (showRich)
@@ -845,7 +851,7 @@ int main (string [] args)
 			{
 				file.writefln (`<p>A plot is rich ` ~
 				    `if it contains more than %s %s.</p>`,
-				    toAmountString (resourceLimit[name] / 2,
+				    toAmountString (richLimit[name],
 				    name == "gold"), name);
 			}
 		}

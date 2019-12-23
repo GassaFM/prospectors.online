@@ -198,10 +198,10 @@ int main (string [] args)
 
 	int [string] resourceLimit;
 	resourceLimit["gold"]  = 32_000_000;
-	resourceLimit["wood"]  = 39_000_000;
+	resourceLimit["wood"]  = 50_000_000;
 	resourceLimit["stone"] = 53_000_000;
-	resourceLimit["coal"]  = 16_000_000;
-	resourceLimit["clay"]  = 16_000_000;
+	resourceLimit["coal"]  = 23_000_000;
+	resourceLimit["clay"]  = 18_000_000;
 	resourceLimit["ore"]   = 32_000_000;
 
 	string [] resNames = ["gold", "wood", "stone",
