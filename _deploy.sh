@@ -3,34 +3,41 @@
 export dopts="-O -release -inline -boundscheck=off -i"
 export dc="ldmd2 ${dopts}"
 
+function compile () {
+	echo Compiling $@
+	${dc} $@ || exit 1
+}
+
 echo Compiling...
-${dc} maps.d || exit 1
-${dc} pretty.d || exit 1
-${dc} extract_token.d || exit 1
-${dc} generate-map-css.d || exit 1
+compile maps.d
+compile pretty.d
+compile extract_token.d
+compile generate-map-css.d
 
 pushd mainnet || exit 1
-${dc} rent-price.d -I .. || exit 1
-popd || exit 1
-
-pushd wax || exit 1
-${dc} rent-price.d -I .. || exit 1
+compile rent-price.d -I ..
 popd || exit 1
 
 pushd land || exit 1
-${dc} update-logs-auction.d || exit 1
-${dc} past-auctions.d || exit 1
-${dc} filter-equal.d || exit 1
+compile refresh-logs-auction.d
+compile past-auctions.d
+compile filter-equal.d
 popd || exit 1
 
 pushd earnings || exit 1
-${dc} refresh-logs.d || exit 1
-${dc} earnings-all.d transaction.d || exit 1
+compile refresh-logs.d
+compile earnings-all.d -I ..
 cp ../land/filter-equal . || exit 1
 popd || exit 1
 
 pushd stores || exit 1
-${dc} stores.d || exit 1
+compile stores.d -I ..
+popd || exit 1
+
+pushd wax-trades || exit 1
+compile display_deals.d -I ..
+compile refresh_log_buys.d -I ..
+compile refresh_log_sales.d -I ..
 popd || exit 1
 
 echo Building...
