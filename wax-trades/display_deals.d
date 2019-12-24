@@ -23,7 +23,70 @@ alias thisToolName = moduleName !({});
 SysTime now;
 string nowString;
 
+string toCommaNumber (real value, bool doStrip)
+{
+	string res = format ("%.3f", value);
+	auto pointPos = res.countUntil ('.');
+	if (doStrip)
+	{
+		while (res.back == '0')
+		{
+			res.popBack ();
+		}
+		if (res.back == '.')
+		{
+			res.popBack ();
+		}
+	}
+	if (pointPos >= 4)
+	{
+		res = res[0..pointPos - 3] ~ ',' ~ res[pointPos - 3..$];
+	}
+	if (pointPos >= 7)
+	{
+		res = res[0..pointPos - 6] ~ ',' ~ res[pointPos - 6..$];
+	}
+	if (pointPos >= 10)
+	{
+		res = res[0..pointPos - 9] ~ ',' ~ res[pointPos - 9..$];
+	}
+	return res;
+}
+
+string toAmountString (long value, bool isGold = false, byte doStrip = 1)
+{
+	if (value == -1)
+	{
+		return "?";
+	}
+	if (doStrip > 1)
+	{
+		if (value >= 10_000)
+		{
+			value = (value / 1000) * 1000;
+		}
+	}
+	if (isGold)
+	{
+		if (doStrip > 1 && value % 1000 == 0)
+		{
+			return toCommaNumber (value / 1000 * 1E+0L,
+			    true) ~ "K";
+		}
+		else
+		{
+			return toCommaNumber (value * 1E+0L, true);
+		}
+	}
+	else
+	{
+		return toCommaNumber (value * 1E-3L,
+		    !!doStrip || isGold) ~ " kg";
+	}
+}
+
 enum RecordType : bool {buying, selling};
+immutable int NA = -1;
 
 struct Record
 {
@@ -268,6 +331,17 @@ void doMainTradesPage (const ref int [int] lastPriceDeals,
 	    `class="place deal-buying">` ~
 	    `<a href="buys-days.html">Buys by day</a>` ~ `</td>`);
 	file.writeln (`</tr>`);
+	file.writeln (`<tr>`);
+	file.writeln (`<td align="center" width="33.3333%" ` ~
+	    `class="place deal-general">` ~
+	    `<a href="deals-stats.html">Deals statistics</a>` ~ `</td>`);
+	file.writeln (`<td align="center" width="33.3333%" ` ~
+	    `class="place deal-selling">` ~
+	    `<a href="sales-stats.html">Sales statistics</a>` ~ `</td>`);
+	file.writeln (`<td align="center" width="33.3333%" ` ~
+	    `class="place deal-buying">` ~
+	    `<a href="buys-stats.html">Buys statistics</a>` ~ `</td>`);
+	file.writeln (`</tr>`);
 	file.writeln (`</tbody>`);
 	file.writeln (`</table>`);
 
@@ -407,7 +481,7 @@ void doStats (const ref Record [] records, string name)
 	    iota (7, items - 1).array;
 	auto codeBreaks = [31: true, 16: true, 24: true, 30: true];
 
-	alias RecordRow = int [items];
+	alias RecordRow = DealList [items];
 	RecordRow [] quantity;
 	RecordRow total;
 	auto quantityAlly = new RecordRow [] [alliances.length];
@@ -426,8 +500,8 @@ void doStats (const ref Record [] records, string name)
 		{
 			quantity.length += 1;
 		}
-		quantity[dayNumber][record.itemId] += record.amount;
-		total[record.itemId] += record.amount;
+		quantity[dayNumber][record.itemId] += record;
+		total[record.itemId] += record;
 
 		foreach (i, alliance; alliances)
 		{
@@ -438,8 +512,8 @@ void doStats (const ref Record [] records, string name)
 			if (record.seller.text in alliance.memberNames)
 			{
 				quantityAlly[i][dayNumber][record.itemId] +=
-				    record.amount;
-				totalAlly[i][record.itemId] += record.amount;
+				    record;
+				totalAlly[i][record.itemId] += record;
 			}
 
 			while (quantityAllyTo[i].length <= dayNumber)
@@ -449,8 +523,8 @@ void doStats (const ref Record [] records, string name)
 			if (record.buyer.text in alliance.memberNames)
 			{
 				quantityAllyTo[i][dayNumber][record.itemId] +=
-				    record.amount;
-				totalAllyTo[i][record.itemId] += record.amount;
+				    record;
+				totalAllyTo[i][record.itemId] += record;
 			}
 		}
 	}
@@ -516,7 +590,7 @@ void doStats (const ref Record [] records, string name)
 				}
 			}
 
-			if (total[i] == 0)
+			if (total[i].quantity == 0)
 			{
 				continue;
 			}
@@ -528,17 +602,17 @@ void doStats (const ref Record [] records, string name)
 			file.writeln (`<td class="amount" ` ~
 			    `style="font-weight:bold">`,
 			    (allianceIndex < alliances.length &&
-			    totalAlly[allianceIndex][i] > 0) ?
+			    totalAlly[allianceIndex][i].quantity > 0) ?
 			    `<span style="color:` ~
 			    alliances[allianceIndex].colorFont ~ `">` ~
-			    totalAlly[allianceIndex][i].text ~
+			    totalAlly[allianceIndex][i].quantity.text ~
 			    `</span>/` : ``,
-			    total[i],
+			    total[i].quantity,
 			    (allianceIndex < alliances.length &&
-			    totalAllyTo[allianceIndex][i] > 0) ?
+			    totalAllyTo[allianceIndex][i].quantity > 0) ?
 			    `/<span style="color:` ~
 			    alliances[allianceIndex].colorInv ~ `">` ~
-			    totalAllyTo[allianceIndex][i].text ~
+			    totalAllyTo[allianceIndex][i].quantity.text ~
 			    `</span>` : ``, `</td>`);
 			foreach_reverse (dayNumber; 0..quantity.length)
 			{
@@ -546,27 +620,372 @@ void doStats (const ref Record [] records, string name)
 				    (allianceIndex <
 				    alliances.length &&
 				    quantityAlly[allianceIndex]
-				    [dayNumber][i] > 0) ?
+				    [dayNumber][i].quantity > 0) ?
 				    `<span style="color:` ~
 				    alliances[allianceIndex]
 				    .colorFont ~ `">` ~
 				    quantityAlly[allianceIndex]
-				    [dayNumber][i].text ~
+				    [dayNumber][i].quantity.text ~
 				    `</span>/` : ``,
-				    quantity[dayNumber][i],
+				    quantity[dayNumber][i].quantity,
 				    (allianceIndex <
 				    alliances.length &&
 				    quantityAllyTo[allianceIndex]
-				    [dayNumber][i] > 0) ?
+				    [dayNumber][i].quantity > 0) ?
 				    `/<span style="color:` ~
 				    alliances[allianceIndex]
 				    .colorInv ~ `">` ~
 				    quantityAllyTo[allianceIndex]
-				    [dayNumber][i].text ~
+				    [dayNumber][i].quantity.text ~
 				    `</span>` : ``, `</td>`);
 			}
 			file.writeln (`</tr>`);
 		}
+
+		file.writeln (`</tbody>`);
+		file.writeln (`</table>`);
+		file.writeln (`<p><a href="trades.html">` ~
+		    `Back to trades</a></p>`);
+		file.writeln (`</body>`);
+		file.writeln (`</html>`);
+		file.close ();
+	}
+}
+
+struct DealList
+{
+	alias Deal = Tuple !(int, q{price}, int, q{quantity});
+
+	Deal [] deals;
+	long quantity = 0;
+	long gold = 0;
+	int medianPriceCache = NA;
+
+	@property auto medianPrice ()
+	{
+		if (medianPriceCache == NA)
+		{
+			medianPriceCache = 0;
+			sort (deals);
+			long halfQuantity = 0;
+			foreach (const ref deal; deals)
+			{
+				halfQuantity += deal.quantity;
+				if (halfQuantity * 2 >= quantity)
+				{
+					medianPriceCache = deal.price;
+					break;
+				}
+			}
+		}
+		return medianPriceCache;
+	}
+
+	ref DealList opOpAssign (string op) (const ref Record record)
+	    if (op == "+")
+	{
+		deals ~= Deal (record.price, record.amount);
+		quantity += deals.back.quantity;
+		gold += deals.back.quantity * 1L * deals.back.price;
+		return this;
+	}
+
+	@disable this (this);
+}
+
+void doStatsExtra (const ref Record [] records, string name)
+{
+	// The following does not work without the "Z"!
+	auto startDate = SysTime.fromSimpleString
+	    ("2019-Dec-02 00:00:00Z", UTC ());
+	immutable int hoursInDay = 24;
+	immutable int hourDuration = 60 * 60;
+	immutable int dayDuration = hourDuration * hoursInDay;
+	immutable int items = 32; // itemList.length.to !(int);
+	auto codeList = iota (1, 7).array ~ (items - 1) ~
+	    iota (7, items - 1).array;
+	auto codeBreaks = [31: true, 16: true, 24: true, 30: true];
+
+	alias RecordRow = DealList [items];
+	RecordRow [] quantity;
+	RecordRow total;
+	long [] goldByDay;
+	long goldTotal;
+	auto quantityAlly = new RecordRow [] [alliances.length];
+	auto totalAlly = new RecordRow [alliances.length];
+	auto quantityAllyTo = new RecordRow [] [alliances.length];
+	auto totalAllyTo = new RecordRow [alliances.length];
+
+	foreach (record; records)
+	{
+		auto moment = SysTime.fromSimpleString
+		    (record.timeStamp ~ 'Z').toUnixTime -
+		    startDate.toUnixTime;
+		auto dayNumber = moment / dayDuration;
+
+		while (quantity.length <= dayNumber)
+		{
+			quantity.length += 1;
+			goldByDay.length += 1;
+		}
+		quantity[dayNumber][record.itemId] += record;
+		total[record.itemId] += record;
+		goldByDay[dayNumber] += record.amount * 1L * record.price;
+		goldTotal += record.amount * 1L * record.price;
+
+		foreach (i, alliance; alliances)
+		{
+			while (quantityAlly[i].length <= dayNumber)
+			{
+				quantityAlly[i].length += 1;
+			}
+			if (record.seller.text in alliance.memberNames)
+			{
+				quantityAlly[i][dayNumber][record.itemId] +=
+				    record;
+				totalAlly[i][record.itemId] += record;
+			}
+
+			while (quantityAllyTo[i].length <= dayNumber)
+			{
+				quantityAllyTo[i].length += 1;
+			}
+			if (record.buyer.text in alliance.memberNames)
+			{
+				quantityAllyTo[i][dayNumber][record.itemId] +=
+				    record;
+				totalAllyTo[i][record.itemId] += record;
+			}
+		}
+	}
+
+	File file;
+
+	void writeHeaderRowDays ()
+	{
+		file.writeln (`<tr style="font-weight:bold ` ~
+		    `text-align:center">`);
+		file.writeln (`<th>&nbsp;</th>`);
+		file.writeln (`<th>&nbsp;</th>`);
+		file.writeln (`<th>Total</th>`);
+		foreach_reverse (dayNumber; 0..quantity.length)
+		{
+			file.writefln (`<th style="` ~
+			    `border-style:solid;border-width:1px"` ~
+			    `>%s</th>`, (startDate +
+			    dayNumber.days).toSimpleString[5..11]);
+		}
+		file.writeln (`</tr>`);
+	}
+
+	foreach (allianceIndex, const ref alliance;
+	    alliances ~ Alliance.init)
+	{
+		auto nameWithAlliance = name ~ "-stats";
+		if (alliance.name != "")
+		{
+			nameWithAlliance ~= "-" ~ alliance.name;
+		}
+		file = File (nameWithAlliance ~ ".html", "wt");
+		file.writeln (`<!DOCTYPE html>`);
+		file.writeln (`<html xmlns=` ~
+		    `"http://www.w3.org/1999/xhtml">`);
+		file.writeln (`<meta http-equiv="content-type" ` ~
+		    `content="text/html; charset=UTF-8">`);
+		file.writeln (`<head>`);
+		file.writefln (`<title>%s by day</title>`, name);
+		file.writeln (`<link rel="stylesheet" ` ~
+		    `href="log.css" type="text/css">`);
+		file.writeln (`</head>`);
+
+		file.writeln (`<body>`);
+		file.writefln (`<h2>%s%s by day</h2>`,
+		    name[0].toUpper, name[1..$]);
+		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
+		file.writeln (`<p><a href="trades.html">` ~
+		    `Back to trades</a></p>`);
+        	file.writeln (`<table class="log"`);
+		file.writeln (`<tbody>`);
+
+		writeHeaderRowDays ();
+
+		auto allyValue (long value, lazy string color)
+		{
+			if (value == 0)
+			{
+				return null;
+			}
+			return `<span style="color:` ~ color ~ `">` ~
+			    value.text ~ `</span>`;
+		}
+
+		bool headerFlag = true;
+		foreach (i; codeList)
+		{
+		        scope (exit)
+		        {
+				if (i in codeBreaks && !headerFlag)
+				{
+					writeHeaderRowDays ();
+					headerFlag = true;
+				}
+			}
+
+			if (total[i].quantity == 0)
+			{
+				continue;
+			}
+			headerFlag = false;
+
+			file.writeln (`<tr>`);
+			file.writeln (`<td class="item">`,
+			    itemList[i].name, `</td>`);
+			file.write (`<td class="amount" ` ~
+			    `style="font-weight:bold">`);
+			file.write (`<span style="color:#3333BB">`,
+			    `amount:</span><br/>`);
+			file.write (`<span style="color:#AAAA00">`,
+			    `total gold:</span><br/>`);
+			file.write (`<span style="color:#555555">`,
+			    `median price:</span>`);
+			file.writeln (`</td>`);
+			file.write (`<td class="amount" ` ~
+			    `style="font-weight:bold">`);
+			if (allianceIndex < alliances.length)
+			{
+				file.write (`<span style="color:#3333BB">`,
+				    only
+				    (allyValue (totalAlly[allianceIndex][i]
+				    .quantity,
+				    alliances[allianceIndex].colorFont).text,
+				    total[i].quantity.toAmountString (true),
+				    allyValue (totalAllyTo[allianceIndex][i]
+				    .quantity,
+				    alliances[allianceIndex].colorInv).text)
+				    .filter !(part => part !is null)
+				    .join (`/`),
+				    `</span><br/>`);
+				file.write (`<span style="color:#AAAA00">`,
+				    only
+				    (allyValue (totalAlly[allianceIndex][i]
+				    .gold,
+				    alliances[allianceIndex].colorFont).text,
+				    total[i].gold.toAmountString (true),
+				    allyValue (totalAllyTo[allianceIndex][i]
+				    .gold,
+				    alliances[allianceIndex].colorInv).text)
+				    .filter !(part => part !is null)
+				    .join (`/`),
+				    `</span><br/>`);
+				file.write (`<span style="color:#555555">`,
+				    only
+				    (allyValue (totalAlly[allianceIndex][i]
+				    .medianPrice,
+				    alliances[allianceIndex].colorFont).text,
+				    total[i].medianPrice.toAmountString (true),
+				    allyValue (totalAllyTo[allianceIndex][i]
+				    .medianPrice,
+				    alliances[allianceIndex].colorInv).text)
+				    .filter !(part => part !is null)
+				    .join (`/`),
+				    `</span>`);
+			}
+			else
+			{
+				file.write (`<span style="color:#3333BB">`,
+				    total[i].quantity.toAmountString (true),
+				    `</span><br/>`);
+				file.write (`<span style="color:#AAAA00">`,
+				    total[i].gold.toAmountString (true),
+				    `</span><br/>`);
+				file.write (`<span style="color:#555555">`,
+				    total[i].medianPrice.toAmountString (true),
+				    `</span>`);
+			}
+			file.writeln (`</td>`);
+			foreach_reverse (dayNumber; 0..quantity.length)
+			{
+				file.write (`<td class="amount">`);
+				if (quantity[dayNumber][i].quantity == 0)
+				{
+					file.write (`&nbsp;`);
+				}
+				else if (allianceIndex < alliances.length)
+				{
+					file.write (`<span style="color:#3333BB">`,
+					    only
+					    (allyValue (quantityAlly[allianceIndex][dayNumber][i]
+					    .quantity,
+					    alliances[allianceIndex].colorFont).text,
+					    quantity[dayNumber][i].quantity.toAmountString (true),
+					    allyValue (quantityAllyTo[allianceIndex][dayNumber][i]
+					    .quantity,
+					    alliances[allianceIndex].colorInv).text)
+					    .filter !(part => part !is null)
+					    .join (`/`),
+					    `</span><br/>`);
+					file.write (`<span style="color:#AAAA00">`,
+					    only
+					    (allyValue (quantityAlly[allianceIndex][dayNumber][i]
+					    .gold,
+					    alliances[allianceIndex].colorFont).text,
+					    quantity[dayNumber][i].gold.toAmountString (true),
+					    allyValue (quantityAllyTo[allianceIndex][dayNumber][i]
+					    .gold,
+					    alliances[allianceIndex].colorInv).text)
+					    .filter !(part => part !is null)
+					    .join (`/`),
+					    `</span><br/>`);
+					file.write (`<span style="color:#555555">`,
+					    only
+					    (allyValue (quantityAlly[allianceIndex][dayNumber][i]
+					    .medianPrice,
+					    alliances[allianceIndex].colorFont).text,
+					    quantity[dayNumber][i].medianPrice.toAmountString (true),
+					    allyValue (quantityAllyTo[allianceIndex][dayNumber][i]
+					    .medianPrice,
+					    alliances[allianceIndex].colorInv).text)
+					    .filter !(part => part !is null)
+					    .join (`/`),
+					    `</span>`);
+				}
+				else
+				{
+					file.write (`<span style="color:#3333BB">`,
+					    quantity[dayNumber][i].quantity.toAmountString (true),
+					    `</span><br/>`);
+					file.write (`<span style="color:#AAAA00">`,
+					    quantity[dayNumber][i].gold.toAmountString (true),
+					    `</span><br/>`);
+					file.write (`<span style="color:#555555">`,
+					    quantity[dayNumber][i].medianPrice.toAmountString (true),
+					    `</span>`);
+				}
+				file.writeln (`</td>`);
+			}
+			file.writeln (`</tr>`);
+		}
+
+		file.writeln (`<tr>`);
+		file.writeln (`<td>&nbsp;</td>`);
+		file.writeln (`<td class="amount" `,
+		    `style="font-weight:bold">`,
+		    `<span style="color:#AAAA00">`,
+		    `Total volume:</span></td>`);
+		file.writeln (`<td class="amount" `,
+		    `style="font-weight:bold">`,
+		    `<span style="color:#AAAA00">`,
+		    goldTotal.toAmountString (true),
+		    `</span></td>`);
+		foreach_reverse (dayNumber; 0..quantity.length)
+		{
+			file.writeln (`<td class="amount" `,
+			    `style="font-weight:bold">`,
+			    `<span style="color:#AAAA00">`,
+			    goldByDay[dayNumber].toAmountString (true),
+			    `</span></td>`);
+		}
+		file.writeln (`</tr>`);
 
 		file.writeln (`</tbody>`);
 		file.writeln (`</table>`);
@@ -637,8 +1056,11 @@ int main (string [] args)
 	alliances ~= Alliance ("ek", "#CCFFCC", "#00CC00", "#FF7777");
 
 	doStats (records, "deals");
+	doStatsExtra (records, "deals");
 	doStats (recordsBuys, "buys");
+	doStatsExtra (recordsBuys, "buys");
 	doStats (recordsSales, "sales");
+	doStatsExtra (recordsSales, "sales");
 
 	return 0;
 }
