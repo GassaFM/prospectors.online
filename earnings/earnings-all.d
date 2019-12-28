@@ -129,7 +129,7 @@ int main (string [] args)
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
 	endPointBlockId = args[1];
 	endPointTable = args[2];
-	auto isTestnet = (args.length > 3 && args[3] == "testnet");
+	auto isTestnet = (args.length > 5 && args[5] == "testnet");
 
 	connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
@@ -260,7 +260,7 @@ int main (string [] args)
 
 		long [string] withdrawals;
 		auto withdrawalsName =
-		    sha256Of ("account:prospectorsc action:withdraw")
+		    sha256Of (args[3])
 		    .format !("%(%02x%)") ~ ".log";
 		foreach (line; File (withdrawalsName).byLineCopy.map !(split))
 		{
@@ -270,7 +270,7 @@ int main (string [] args)
 			{
 				continue;
 			}
-			if (line[2] != "prospectorsc") // exclude tippedtipped
+			if (!line[2].startsWith ("prospectors"))
 			{
 				continue;
 			}
@@ -291,8 +291,7 @@ int main (string [] args)
 		}
 
 		long [string] deposits;
-		auto depositsName = sha256Of ("account:prospectorsg " ~
-		    "action:transfer data.to:prospectorsc")
+		auto depositsName = sha256Of (args[4])
 		    .format !("%(%02x%)") ~ ".log";
 		foreach (line; File (depositsName).byLineCopy.map !(split))
 		{
@@ -302,7 +301,7 @@ int main (string [] args)
 			{
 				continue;
 			}
-			if (line[2] != "prospectorsg") // exclude tippedtipped
+			if (!line[2].startsWith ("prospectors"))
 			{
 				continue;
 			}
@@ -442,7 +441,7 @@ int main (string [] args)
 		file.close ();
 	}
 
-	foreach (name; args.drop (3 + isTestnet).chain (only ("all")))
+	foreach (name; args.drop (5 + isTestnet).chain (only ("all")))
 	{
 		doHtmlBalances (name);
 	}

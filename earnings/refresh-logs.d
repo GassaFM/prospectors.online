@@ -61,6 +61,10 @@ void updateLog (string endPoint, string query)
 			    ["actions"].array)
 			{
 				auto contract = action["account"].str;
+				if (!contract.startsWith ("prospectors"))
+				{
+					continue;
+				}
 				auto actionName = action["name"].str;
 				auto actors = action["authorization"].array
 				    .map !(line => line["actor"].str).array;
@@ -81,8 +85,7 @@ void updateLog (string endPoint, string query)
 
 int main (string [] args)
 {
-	updateLog (args[1], "account:prospectorsc action:withdraw");
-	updateLog (args[1], "account:prospectorsg " ~
-	    "action:transfer data.to:prospectorsc");
+	updateLog (args[1], args[2]);
+	updateLog (args[1], args[3]);
 	return 0;
 }
