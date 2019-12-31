@@ -334,6 +334,10 @@ int main (string [] args)
 		maxCol = max (maxCol, cur.col);
 	}
 
+	auto nowTime = Clock.currTime (UTC ());
+	auto nowString = nowTime.toSimpleString[0..20];
+	auto nowUnix = nowTime.toUnixTime ();
+
 	workerElement [] [string] workersByOwner;
 	int [Coord] workerNum;
 
@@ -351,15 +355,15 @@ int main (string [] args)
 			}
 			auto locId = curWorker.loc_id;
 			auto pos = toCoord (locId);
-			workerNum[pos] += 1;
+			auto activeTime = curWorker.job.ready_time;
+			if (nowUnix - activeTime <= 7 * 24 * 60 * 60)
+			{
+				workerNum[pos] += 1;
+			}
 			auto owner = curWorker.owner.text;
 			workersByOwner[owner] ~= curWorker;
 		}
 	}
-
-	auto nowTime = Clock.currTime (UTC ());
-	auto nowString = nowTime.toSimpleString[0..20];
-	auto nowUnix = nowTime.toUnixTime ();
 
 	auctionElement [Coord] auctions;
 
