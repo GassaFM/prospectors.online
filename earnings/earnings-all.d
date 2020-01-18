@@ -27,6 +27,7 @@ auto parseBinary (T) (ref ubyte [] buffer)
 	return res;
 }
 
+// Curl curl;
 HTTP connection;
 
 auto getWithData (Conn) (string url, string [string] data, Conn conn)
@@ -62,6 +63,7 @@ long getBlockNumber (TimeType) (TimeType t)
 
 JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 {
+	debug {writeln ("Getting table ", tableName, " at moment ", t);}
 	auto blockNumber = getBlockNumber (t);
 	auto fileName = tableName.text ~ "." ~ blockNumber.text ~ ".json";
 	try
@@ -84,7 +86,8 @@ JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 		    "json": "true"],
 		    connection);
 		auto res = raw.parseJSON;
-		File (fileName, "wb").write (res.toPrettyString);
+		// speedup hack: don't write to file, as it's used only once
+//		File (fileName, "wb").write (res.toPrettyString);
 		return res;
 	}
 	catch (Exception e)
@@ -131,6 +134,11 @@ int main (string [] args)
 	endPointTable = args[2];
 	auto isTestnet = (args.length > 5 && args[5] == "testnet");
 
+/*
+	curl = Curl ();
+	curl.initialize ();
+	curl.set (CurlOption.encoding, "deflate");
+*/
 	connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
 
@@ -172,6 +180,7 @@ int main (string [] args)
 		}
 
 		long [string] balances;
+		long [string] flags;
 
 		foreach (const ref account; accounts)
 		{
@@ -180,6 +189,7 @@ int main (string [] args)
 			{
 				balances[name] +=
 				    account["balance"].integer;
+				flags[name] = account["flags"].integer;
 			}
 		}
 
@@ -200,7 +210,7 @@ int main (string [] args)
 		long [string] richGoldPlotsNum;
 
 		int [string] resourceLimit;
-		resourceLimit["gold"]  = 32_000_000;
+		resourceLimit["gold"]  = 24_000_000;
 		resourceLimit["wood"]  = 50_000_000;
 		resourceLimit["stone"] = 53_000_000;
 		resourceLimit["coal"]  = 23_000_000;
@@ -367,15 +377,41 @@ int main (string [] args)
 
 		long total = 0;
 		names.schwartzSort !(name => tuple (-delta[name], name));
-		foreach (num, ref name; names)
+		int num = 0;
+		foreach (ref name; names)
 		{
+			if (balances.get (name, 0) == 0 &&
+			    withdrawals.get (name, 0) == 0 &&
+			    deposits.get (name, 0) == 0 &&
+			    name !in plotsNum &&
+			    name !in richGoldPlotsNum &&
+			    name !in buildingsNum)
+			{
+				continue;
+			}
+			num += 1;
+
 			auto style = "";
+			if ((flags[name] & 1) == 1)
+			{
+				style = ` style="background-color:#FFFFAA"`;
+			}
+			if ((flags[name] & 16) == 16)
+			{
+				style = ` style="background-color:#BBBBBB"`;
+			}
+			if ((flags[name] & 17) == 17)
+			{
+				style = ` style="background-color:#BBBB88"`;
+			}
+/*
 			if (name in isJailed)
 			{
 				style = ` style="background-color:#BBBBBB"`;
 			}
+*/
 			file.writefln (`<tr%s>`, style);
-			file.writefln (`<td class="time">%s</td>`, num + 1);
+			file.writefln (`<td class="time">%s</td>`, num);
 			file.writefln (`<td class="name">%s</td>`, name);
 			file.writefln (`<td class="amount">%s</td>`,
 			    toCommaNumber (delta[name], true));
