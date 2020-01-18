@@ -13,25 +13,21 @@ import std.stdio;
 import std.string;
 import std.traits;
 import std.typecons;
-import transaction;
 
-auto parseBinary (T) (ref ubyte [] buffer)
-{
-	static if (is (Unqual !(T) == char []))
-	{
-		static assert (false);
-	}
-	enum len = T.sizeof;
-	T res = *(cast (T *) (buffer.ptr));
-	buffer = buffer[len..$];
-	return res;
-}
+import prospectorsc_abi;
+import transaction;
+import utilities;
 
 // Curl curl;
 HTTP connection;
 
 auto getWithData (Conn) (string url, string [string] data, Conn conn)
 {
+/*
+	curl = Curl ();
+	curl.initialize ();
+	curl.set (CurlOption.encoding, "deflate");
+*/
 	return get (url ~ "?" ~ data.byKeyValue.map !(line =>
 	    line.key ~ "=" ~ line.value).join ("&"), conn);
 }
@@ -65,7 +61,7 @@ JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 {
 	debug {writeln ("Getting table ", tableName, " at moment ", t);}
 	auto blockNumber = getBlockNumber (t);
-	auto fileName = tableName.text ~ "." ~ blockNumber.text ~ ".json";
+	auto fileName = tableName.text ~ "." ~ blockNumber.text ~ ".binary";
 	try
 	{
 		return File (fileName).byLineCopy.joiner ("\n").parseJSON;
@@ -82,9 +78,10 @@ JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 		    "scope": "prospectorsc",
 		    "table": tableName,
 		    "block_num": blockNumber.text,
-		    "with_block_num": "true",
-		    "json": "true"],
+		    "with_block_num": "false",
+		    "json": "false"],
 		    connection);
+//		debug {writeln (raw);}
 		auto res = raw.parseJSON;
 		// speedup hack: don't write to file, as it's used only once
 //		File (fileName, "wb").write (res.toPrettyString);
@@ -127,6 +124,17 @@ string toCommaNumber (real value, bool doStrip)
 	return res;
 }
 
+auto parseBinaryByValue (T, R) (R range)
+{
+	auto cur = range.array;
+//	writeln (cur);
+//	writeln (T.stringof);
+	auto res = parseBinary !(T) (cur);
+//	writeln ("!");
+	assert (cur.empty || cur.length == 3);
+	return res;
+}
+
 int main (string [] args)
 {
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
@@ -134,11 +142,6 @@ int main (string [] args)
 	endPointTable = args[2];
 	auto isTestnet = (args.length > 5 && args[5] == "testnet");
 
-/*
-	curl = Curl ();
-	curl.initialize ();
-	curl.set (CurlOption.encoding, "deflate");
-*/
 	connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
 
@@ -148,14 +151,22 @@ int main (string [] args)
 	auto nowUnix = nowTime.toUnixTime ();
 	auto nowString = nowTime.toSimpleString[0..20];
 
-	auto accounts  = getTableAtMoment ("account", nowTime)["rows"].array
-	    .map !(line => line["json"]).array;
-	auto orders    = getTableAtMoment ("order",   nowTime)["rows"].array
-	    .map !(line => line["json"]).array;
-	auto locations = getTableAtMoment ("loc",     nowTime)["rows"].array
-	    .map !(line => line["json"]).array;
-	auto workers   = getTableAtMoment ("worker",  nowTime)["rows"].array
-	    .map !(line => line["json"]).array;
+	auto accounts = getTableAtMoment ("account", nowTime)["rows"].array
+	    .map !(row => row["hex"].str.chunks (2).map !(value =>
+	    to !(ubyte) (value, 16)))
+	    .map !(row => parseBinaryByValue !(accountElement) (row)).array;
+	auto orders = getTableAtMoment ("order", nowTime)["rows"].array
+	    .map !(row => row["hex"].str.chunks (2).map !(value =>
+	    to !(ubyte) (value, 16)))
+	    .map !(row => parseBinaryByValue !(orderElement) (row)).array;
+	auto locations = getTableAtMoment ("loc", nowTime)["rows"].array
+	    .map !(row => row["hex"].str.chunks (2).map !(value =>
+	    to !(ubyte) (value, 16)))
+	    .map !(row => parseBinaryByValue !(locElement) (row)).array;
+	auto workers = getTableAtMoment ("worker", nowTime)["rows"].array
+	    .map !(row => row["hex"].str.chunks (2).map !(value =>
+	    to !(ubyte) (value, 16)))
+	    .map !(row => parseBinaryByValue !(workerElement) (row)).array;
 
 	void doHtmlBalances (string allianceName)
 	{
@@ -163,7 +174,7 @@ int main (string [] args)
 		if (allianceName == "all")
 		{
 			names = accounts
-			    .map !(account => account["name"].str).array;
+			    .map !(account => account.name.text).array;
 			names = names.filter !(line => line != "prospectorsc")
 			    .array;
 		}
@@ -184,21 +195,20 @@ int main (string [] args)
 
 		foreach (const ref account; accounts)
 		{
-			auto name = account["name"].str;
+			auto name = account.name.text;
 			if (name in namesSet)
 			{
-				balances[name] +=
-				    account["balance"].integer;
-				flags[name] = account["flags"].integer;
+				balances[name] += account.balance;
+				flags[name] = account.flags;
 			}
 		}
 
 		foreach (const ref order; orders)
 		{
-			if (order["state"].integer == 0)
+			if (order.state == 0)
 			{
-				balances[order["owner"].str] +=
-				    order["gold"].integer;
+				balances[order.owner.text] +=
+				    order.gold;
 			}
 		}
 
@@ -219,15 +229,15 @@ int main (string [] args)
 
 		foreach (const ref location; locations)
 		{
-			auto owner = location["owner"].str;
+			auto owner = location.owner.text;
 			plotsNum[owner] += 1;
 
 			auto buildStep =
-			    location["building"]["build_step"].integer;
+			    location.building.build_step;
 			auto buildAmount =
-			    location["building"]["build_amount"].integer;
+			    location.building.build_amount;
 			auto buildReadyTime =
-			    location["building"]["ready_time"].integer;
+			    location.building.ready_time;
 			if (buildStep + 1 == buildSteps &&
 			    buildAmount == buildStepLength &&
 			    buildReadyTime <= nowUnix)
@@ -235,17 +245,17 @@ int main (string [] args)
 				buildingsNum[owner] += 1;
 			}
 
-			if (location["gold"].integer * 2 >
+			if (location.gold * 2 >
 			    resourceLimit["gold"])
 			{
 				richGoldPlotsNum[owner] += 1;
 			}
 
-			auto cur = location["storage"].array.find !(line =>
-			    line["type_id"].integer == 1);
+			auto cur = location.storage.find !(line =>
+			    line.type_id == 1);
 			if (!cur.empty)
 			{
-				balances[owner] += cur.front["amount"].integer;
+				balances[owner] += cur.front.amount;
 			}
 		}
 
@@ -253,18 +263,18 @@ int main (string [] args)
 
 		foreach (const ref worker; workers)
 		{
-			auto owner = worker["owner"].str;
-			if (worker["job"]["job_type"].integer == 8 &&
-			    nowUnix < worker["job"]["ready_time"].integer)
+			auto owner = worker.owner.text;
+			if (worker.job.job_type == 8 &&
+			    nowUnix < worker.job.ready_time)
 			{
 				isJailed[owner] = true;
 			}
 
-			auto cur = worker["backpack"].array.find !(line =>
-			    line["type_id"].integer == 1);
+			auto cur = worker.backpack.find !(line =>
+			    line.type_id == 1);
 			if (!cur.empty)
 			{
-				balances[owner] += cur.front["amount"].integer;
+				balances[owner] += cur.front.amount;
 			}
 		}
 
@@ -375,6 +385,21 @@ int main (string [] args)
 		file.writefln (`<th>Characteristics</th>`);
 		file.writeln (`</tr>`);
 
+		bool showFT = false;
+		auto queryFT = "account:simpleassets " ~
+		    "action:transferf data.to:prospectorsc";
+		try
+		{
+			auto ftName = queryFT.sha256Of.format !("%(%02x%)");
+			auto ftLog = File (ftName ~ ".binary");
+			foreach (line; ftLog.byLineCopy)
+			{
+			}
+		}
+		catch (Exception e)
+		{
+		}
+
 		long total = 0;
 		names.schwartzSort !(name => tuple (-delta[name], name));
 		int num = 0;
@@ -455,6 +480,11 @@ int main (string [] args)
 		    `factors into account:<br/>`);
 		file.writeln (`&nbsp;<tt>-</tt> all deposit actions<br/>`);
 		file.writeln (`&nbsp;<tt>+</tt> all withdraw actions<br/>`);
+		if (showFT)
+		{
+			file.writeln (`&nbsp;<tt>-</tt> all gold ` ~
+			    `from the pre-sale auction<br/>`);
+		}
 		file.writeln (`&nbsp;<tt>+</tt> current gold balance<br/>`);
 		file.writeln (`&nbsp;<tt>+</tt> gold in all open orders<br/>`);
 		file.writeln (`&nbsp;<tt>+</tt> raw mined gold on all ` ~
