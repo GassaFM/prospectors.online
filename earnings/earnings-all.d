@@ -46,6 +46,7 @@ long getBlockNumber (TimeType) (TimeType t)
 	{
 	}
 
+//	connection.verbose = true;
 	auto raw = post
 	    (endPointBlockId,
 	    ["time": t.toISOExtString,
@@ -352,12 +353,60 @@ int main (string [] args)
 			deposits[from.toString] += pgl / 10;
 		}
 
+		long [string] goldFT;
+		bool showFT = true;
+		auto queryFT = "account:simpleassets " ~
+		    "action:transferf data.to:prospectorsc";
+		try
+		{
+			auto ftName = queryFT.sha256Of.format !("%(%02x%)");
+			auto ftLog = File (ftName ~ ".log");
+			foreach (line; ftLog.byLineCopy.map !(split))
+			{
+				auto moment = SysTime.fromSimpleString
+				    (line[0..2].join (" ") ~ "Z");
+				if (nowTime < moment)
+				{
+					continue;
+				}
+
+				auto name = line[2];
+				auto oldPurchases = line[4]
+				    .chunks (2).map !(value =>
+				    to !(ubyte) (value, 16))
+				    .parseBinaryByValue !(accountElement)
+				    .purchases;
+				auto newPurchases = line[5]
+				    .chunks (2).map !(value =>
+				    to !(ubyte) (value, 16))
+				    .parseBinaryByValue !(accountElement)
+				    .purchases;
+				goldFT[name] -= oldPurchases
+				    .filter !(item => item.stuff.type_id == 1)
+				    .map !(item => item.stuff.amount).sum;
+				goldFT[name] += newPurchases
+				    .filter !(item => item.stuff.type_id == 1)
+				    .map !(item => item.stuff.amount).sum;
+			}
+		}
+		catch (Exception e)
+		{
+			showFT = false;
+/*
+			writeln (e.msg);
+			return;
+*/
+		}
+
 		long [string] delta;
 
 		foreach (ref name; names)
 		{
-			delta[name] = balances.get (name, 0) +
-			    withdrawals.get (name, 0) - deposits.get (name, 0);
+			delta[name] =
+			    +balances.get (name, 0) +
+			    +withdrawals.get (name, 0) +
+			    -deposits.get (name, 0) +
+			    -goldFT.get (name, 0);
 		}
 
 		auto file = File (allianceName ~ ".html", "wb");
@@ -385,21 +434,6 @@ int main (string [] args)
 		file.writefln (`<th>Characteristics</th>`);
 		file.writeln (`</tr>`);
 
-		bool showFT = false;
-		auto queryFT = "account:simpleassets " ~
-		    "action:transferf data.to:prospectorsc";
-		try
-		{
-			auto ftName = queryFT.sha256Of.format !("%(%02x%)");
-			auto ftLog = File (ftName ~ ".binary");
-			foreach (line; ftLog.byLineCopy)
-			{
-			}
-		}
-		catch (Exception e)
-		{
-		}
-
 		long total = 0;
 		names.schwartzSort !(name => tuple (-delta[name], name));
 		int num = 0;
@@ -410,12 +444,19 @@ int main (string [] args)
 			    deposits.get (name, 0) == 0 &&
 			    name !in plotsNum &&
 			    name !in richGoldPlotsNum &&
-			    name !in buildingsNum)
+			    name !in buildingsNum &&
+			    name !in goldFT)
 			{
 				continue;
 			}
 			num += 1;
 
+/*
+			if (name in goldFT)
+			{
+				writeln (name, " ", goldFT[name]);
+			}
+*/
 			auto style = "";
 			if ((flags[name] & 1) == 1)
 			{
