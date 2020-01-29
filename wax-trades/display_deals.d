@@ -224,9 +224,14 @@ void doHtml (string name, const ref Record [] records)
 	file.writeln (`<th>Amount</th>`);
 	file.writeln (`<th>Price</th>`);
 	file.writeln (`</tr>`);
+	immutable int pageThreshold = 10_000;
 	foreach (i, record; records)
 	{
 		auto id = records.length - i;
+		if (i > pageThreshold)
+		{
+			break;
+		}
 		file.writeln (`<tr>`);
 		file.writeln (`<td class="time">`, id, `</td>`);
 		file.writeln (`<td class="time">`,
