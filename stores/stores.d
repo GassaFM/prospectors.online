@@ -298,9 +298,11 @@ int main (string [] args)
 
 	void doMainStoresPage ()
 	{
-		auto codeList = iota (1, 7).array ~ (items - 1) ~
-		    iota (7, items - 1).array;
-		auto codeBreaks = [31: true, 16: true, 24: true];
+		auto codeList = iota (1, 7).array ~ 31 ~
+		    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
+		    iota (17, 25).array ~ iota (32, 40).array ~
+		    iota (25, 31).array ~ 50;
+		auto codeBreaks = [31: true, 51: true, 39: true, 50: true];
 
 		File file;
 
@@ -335,6 +337,18 @@ int main (string [] args)
 
 		foreach (id; codeList)
 		{
+		        scope (exit)
+		        {
+				if (id in codeBreaks)
+				{
+					file.writeln (`<tr height=5px></tr>`);
+				}
+			}
+
+			if (id !in total)
+			{
+				continue;
+			}
 			auto itemName = itemList[id].name;
 
 			file.writeln (`<tr>`);
@@ -349,11 +363,6 @@ int main (string [] args)
 			file.writefln (`<td style="text-align:center">` ~
 			    `<a href="stores.%02d.txt">raw data</a></td>`, id);
 			file.writeln (`</tr>`);
-
-			if (id in codeBreaks)
-			{
-				file.writeln (`<tr height=5px></tr>`);
-			}
 		}
 
 		file.writeln (`</tbody>`);

@@ -299,7 +299,7 @@ int main (string [] args)
 			    toCommaNumber (line[6].to !(int), true), `</td>`);
 			file.writeln (`<td class="name">`, line[5], `</td>`);
 			file.writeln (`<td class="amount">`,
-			    toCommaNumber (line[7].to !(int) / (60 * 60 * 24),
+			    toCommaNumber (line[7].to !(long) / (60 * 60 * 24),
 			    true), `</td>`);
 			foreach (r; 0..7)
 			{

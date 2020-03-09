@@ -224,9 +224,14 @@ void doHtml (string name, const ref Record [] records)
 	file.writeln (`<th>Amount</th>`);
 	file.writeln (`<th>Price</th>`);
 	file.writeln (`</tr>`);
+	immutable int pageThreshold = 10_000;
 	foreach (i, record; records)
 	{
 		auto id = records.length - i;
+		if (i > pageThreshold)
+		{
+			break;
+		}
 		file.writeln (`<tr>`);
 		file.writeln (`<td class="time">`, id, `</td>`);
 		file.writeln (`<td class="time">`,
@@ -289,9 +294,11 @@ void doMainTradesPage (const ref int [int] lastPriceDeals,
     const ref int [int] lastPriceBuys, const ref int [int] lastPriceSales)
 {
 	auto items = itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ (items - 1) ~
-	    iota (7, items - 1).array;
-	auto codeBreaks = [31: true, 16: true, 24: true];
+	auto codeList = iota (1, 7).array ~ 31 ~
+	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
+	    iota (17, 25).array ~ iota (32, 40).array ~
+	    iota (25, 31).array ~ 50;
+	auto codeBreaks = [31: true, 51: true, 39: true, 50: true];
 
 	File file;
 
@@ -476,10 +483,12 @@ void doStats (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 32; // itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ (items - 1) ~
-	    iota (7, items - 1).array;
-	auto codeBreaks = [31: true, 16: true, 24: true, 30: true];
+	immutable int items = 52; // itemList.length.to !(int);
+	auto codeList = iota (1, 7).array ~ 31 ~
+	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
+	    iota (17, 25).array ~ iota (32, 40).array ~
+	    iota (25, 31).array ~ 50;
+	auto codeBreaks = [31: true, 51: true, 39: true, 50: true];
 
 	alias RecordRow = DealList [items];
 	RecordRow [] quantity;
@@ -701,10 +710,12 @@ void doStatsExtra (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 32; // itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ (items - 1) ~
-	    iota (7, items - 1).array;
-	auto codeBreaks = [31: true, 16: true, 24: true, 30: true];
+	immutable int items = 52; // itemList.length.to !(int);
+	auto codeList = iota (1, 7).array ~ 31 ~
+	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
+	    iota (17, 25).array ~ iota (32, 40).array ~
+	    iota (25, 31).array ~ 50;
+	auto codeBreaks = [31: true, 51: true, 39: true, 50: true];
 
 	alias RecordRow = DealList [items];
 	RecordRow [] quantity;

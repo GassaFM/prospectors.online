@@ -8,3 +8,7 @@
  8	Sawmill	M	#D0FFD0	#30AF30
  9	Tool Workshop	T	#CFDFF7	#4682B4
 10	Cart Factory	T	#F7EFE7	#C19A6B
+11	Manufactory	T	#FFD9F4	#FF69B4
+12	Coffee Factory	C	#7F5D3F	#72401C
+13	Coffee House	C	#83EEBD	#06CC6A
+14	Bank	B	#F7F3B7	#C7C397

@@ -63,7 +63,8 @@ struct Building
 	t_skill build_step;
 	t_amount build_amount;
 	t_utime ready_time;
-	uint64 r1;
+	t_amount health;
+	uint32 r1;
 }
 
 struct LocJob
@@ -216,6 +217,10 @@ struct chsale
 {
 	ID market_id;
 	t_amount price;
+}
+
+struct distribtax
+{
 }
 
 struct dobuild

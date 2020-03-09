@@ -1029,6 +1029,62 @@ int main (string [] args)
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
 		    `to see details.</p>`);
 
+		void addBuildingTableCell (T) (ref T t)
+		{
+			auto backgroundColorBuilding = 0xEEEEEE;
+			auto buildingDetails = "&nbsp;";
+			auto buildId = t.value.building.build_id;
+			if (buildId != 0)
+			{
+				buildingDetails =
+				    buildings[buildId].name;
+				auto done = buildingDone[t.key];
+				if (done < buildStepLength *
+				    buildSteps)
+				{
+					buildingDetails ~= format
+					    (`, %d%% built`,
+					    done * 100L /
+					    (buildStepLength *
+					    buildSteps));
+				}
+				else if (buildStepLength *
+				    buildSteps < done &&
+				    done < buildStepLength *
+				    (buildSteps + 1))
+				{
+					buildingDetails ~= format
+					    (`, %d%% upgraded`,
+					    (done % buildStepLength) * 100L /
+					    buildStepLength);
+				}
+				else if (done == buildStepLength *
+				    (buildSteps + 1))
+				{
+					buildingDetails ~= format
+					    (`, level %d`, 2);
+				}
+				backgroundColorBuilding = mixColor
+				    (buildings[buildId].loColor,
+				    buildings[buildId].hiColor,
+				    0, done, buildStepLength *
+				    buildSteps + 1).toColorInt;
+			}
+			string whiteFont;
+			immutable int colorThreshold = 0x80;
+			if (buildId != 0 &&
+			    buildings[buildId].loColor.all !(c =>
+			    c < colorThreshold))
+			{
+				whiteFont ~= `;color:#FFFFFF`;
+				whiteFont ~= `;border-color:#000000`;
+			}
+			file.writefln (`<td style="text-align:left;` ~
+			    `background-color:#%06X%s">%s</td>`,
+			    backgroundColorBuilding, whiteFont,
+			    buildingDetails);
+		}
+
 		if (type == RentMapType.simple)
 		{
 			auto plotsByNum = numPlots.byKeyValue ().array;
@@ -1142,42 +1198,7 @@ int main (string [] args)
 					    (t.key), resTemplate[r].name ==
 					    "gold", false));
 				}
-				auto backgroundColorBuilding = 0xEEEEEE;
-				auto buildingDetails = "&nbsp;";
-				auto buildId = t.value.building.build_id;
-				if (buildId != 0)
-				{
-					buildingDetails =
-					    buildings[buildId].name;
-					auto done = buildingDone[t.key];
-					if (done != buildStepLength *
-					    buildSteps)
-					{
-						buildingDetails ~= format
-						    (`, %d%% built`,
-						    done * 100L /
-						    (buildStepLength *
-						    buildSteps));
-					}
-					backgroundColorBuilding = mixColor
-					    (buildings[buildId].loColor,
-					    buildings[buildId].hiColor,
-					    0, done, buildStepLength *
-					    buildSteps).toColorInt;
-				}
-				string whiteFont;
-				immutable int colorThreshold = 0x80;
-				if (buildId != 0 &&
-				    buildings[buildId].loColor.all !(c =>
-				    c < colorThreshold))
-				{
-					whiteFont ~= `;color:#FFFFFF`;
-					whiteFont ~= `;border-color:#000000`;
-				}
-				file.writefln (`<td style="text-align:left;` ~
-				    `background-color:#%06X%s">%s</td>`,
-				    backgroundColorBuilding, whiteFont,
-				    buildingDetails);
+				addBuildingTableCell (t);
 				file.writeln (`</tr>`);
 			}
 			file.writeln (`</tbody>`);
@@ -1282,42 +1303,7 @@ int main (string [] args)
 					    (t.key), resTemplate[r].name ==
 					    "gold", false));
 				}
-				auto backgroundColorBuilding = 0xEEEEEE;
-				auto buildingDetails = "&nbsp;";
-				auto buildId = t.value.building.build_id;
-				if (buildId != 0)
-				{
-					buildingDetails =
-					    buildings[buildId].name;
-					auto done = buildingDone[t.key];
-					if (done != buildStepLength *
-					    buildSteps)
-					{
-						buildingDetails ~= format
-						    (`, %d%% built`,
-						    done * 100L /
-						    (buildStepLength *
-						    buildSteps));
-					}
-					backgroundColorBuilding = mixColor
-					    (buildings[buildId].loColor,
-					    buildings[buildId].hiColor,
-					    0, done, buildStepLength *
-					    buildSteps).toColorInt;
-				}
-				string whiteFont;
-				immutable int colorThreshold = 0x80;
-				if (buildId != 0 &&
-				    buildings[buildId].loColor.all !(c =>
-				    c < colorThreshold))
-				{
-					whiteFont ~= `;color:#FFFFFF`;
-					whiteFont ~= `;border-color:#000000`;
-				}
-				file.writefln (`<td style="text-align:left;` ~
-				    `background-color:#%06X%s">%s</td>`,
-				    backgroundColorBuilding, whiteFont,
-				    buildingDetails);
+				addBuildingTableCell (t);
 				file.writeln (`</tr>`);
 			}
 			file.writeln (`</tbody>`);
@@ -1342,8 +1328,10 @@ int main (string [] args)
 		writeHtmlHeader (file, title);
 		writeCoordRow (file);
 
-		auto completed = new int [buildings.length];
 		auto inProgress = new int [buildings.length];
+		auto completed = new int [buildings.length];
+		auto inUpgrade = new int [buildings.length];
+		auto upgraded = new int [buildings.length];
 		foreach (row; minRow..maxRow + 1)
 		{
 			file.writeln (`<tr>`);
@@ -1370,13 +1358,8 @@ int main (string [] args)
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
 					auto done = buildingDone[pos];
-					if (done == buildStepLength *
+					if (done < buildStepLength *
 					    buildSteps)
-					{
-						sign = buildings[buildId].sign;
-						completed[buildId] += 1;
-					}
-					else
 					{
 						hoverText ~= format
 						    (`&#10;progress: %s of %s`,
@@ -1384,11 +1367,34 @@ int main (string [] args)
 						    buildSteps);
 						inProgress[buildId] += 1;
 					}
+					else if (done == buildStepLength *
+					    buildSteps)
+					{
+						sign = buildings[buildId].sign;
+						completed[buildId] += 1;
+					}
+					else if (done < buildStepLength *
+					    (buildSteps + 1))
+					{
+						hoverText ~= format
+						    (`&#10;upgrade: %s of %s`,
+						    done % buildStepLength,
+						    buildStepLength);
+						inUpgrade[buildId] += 1;
+					}
+					else
+					{
+						hoverText ~= format
+						    (` level %s`, 2);
+						inUpgrade[buildId] += 1;
+						sign = buildings[buildId].sign;
+						upgraded[buildId] += 1;
+					}
 					backgroundColor = mixColor
 					    (buildings[buildId].loColor,
 					    buildings[buildId].hiColor,
 					    0, done, buildStepLength *
-					    buildSteps).toColorInt;
+					    (buildSteps + 1)).toColorInt;
 				}
 				if (pos == Coord (0, 0))
 				{
@@ -1430,7 +1436,8 @@ int main (string [] args)
 		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
 		file.writeln (`<p>Classification by production: ` ~
 		    `M = Material, R = Resource, ` ~
-		    `T = Tools and Transport.</p>`);
+		    `T = Tools and Transport, C = Coffee, ` ~
+		    `B = Banking.</p>`);
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
 		    `to see details.</p>`);
 
@@ -1442,8 +1449,10 @@ int main (string [] args)
 		file.writefln (`<th class="plot" ` ~
 		    `width="16px">&nbsp;</th>`);
 		file.writefln (`<th>Building type</th>`);
-		file.writefln (`<th>Completed</th>`);
-		file.writefln (`<th>In progress</th>`);
+		file.writefln (`<th>0 &gt;&gt;&gt; 1</th>`);
+		file.writefln (`<th>Level 1</th>`);
+		file.writefln (`<th>1 &gt;&gt;&gt; 2</th>`);
+		file.writefln (`<th>Level 2</th>`);
 		file.writeln (`</tr>`);
 
 		foreach (ref building; buildings)
@@ -1469,9 +1478,13 @@ int main (string [] args)
 			file.writeln (`<td style="text-align:left">`,
 			    building.name, `</td>`);
 			file.writeln (`<td style="text-align:right">`,
+			    inProgress[building.id.to !(int)], `</td>`);
+			file.writeln (`<td style="text-align:right">`,
 			    completed[building.id.to !(int)], `</td>`);
 			file.writeln (`<td style="text-align:right">`,
-			    inProgress[building.id.to !(int)], `</td>`);
+			    inUpgrade[building.id.to !(int)], `</td>`);
+			file.writeln (`<td style="text-align:right">`,
+			    upgraded[building.id.to !(int)], `</td>`);
 			file.writeln (`</tr>`);
 		}
 
@@ -1481,9 +1494,13 @@ int main (string [] args)
 		file.writeln (`<td style="font-weight:bold;` ~
 		    `text-align:left">Total</td>`);
 		file.writeln (`<td style="text-align:right">`,
+		    inProgress.sum, `</td>`);
+		file.writeln (`<td style="text-align:right">`,
 		    completed.sum, `</td>`);
 		file.writeln (`<td style="text-align:right">`,
-		    inProgress.sum, `</td>`);
+		    inUpgrade.sum, `</td>`);
+		file.writeln (`<td style="text-align:right">`,
+		    upgraded.sum, `</td>`);
 		file.writeln (`</tr>`);
 
 		file.writeln (`</tbody>`);
