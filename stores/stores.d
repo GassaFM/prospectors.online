@@ -302,7 +302,8 @@ int main (string [] args)
 		    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
 		    iota (17, 25).array ~ iota (32, 40).array ~
 		    iota (25, 31).array ~ 50;
-		auto codeBreaks = [31: true, 51: true, 39: true, 50: true];
+		auto codeBreaks = [31: true, 16: true, 51: true,
+		    24: true, 39: true, 50: true];
 
 		File file;
 
