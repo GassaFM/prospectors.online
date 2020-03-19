@@ -7,6 +7,7 @@ alias t_balance = int64;
 alias t_build = int16;
 alias t_byte = uint8;
 alias t_coord = int32;
+alias t_energy = int16;
 alias t_health = int32;
 alias t_job = int16;
 alias t_logo = uint32;
@@ -27,7 +28,8 @@ struct AccountModel
 	t_balance balance;
 	t_balance referer_fee;
 	t_name alliance;
-	uint64 r4;
+	t_utime premium_time;
+	uint32 points;
 }
 
 struct AllianceModel
@@ -64,7 +66,8 @@ struct Building
 	t_amount build_amount;
 	t_utime ready_time;
 	t_amount health;
-	uint32 r1;
+	uint16 param;
+	uint16 r1;
 }
 
 struct LocJob
@@ -177,7 +180,9 @@ struct WorkerModel
 	Stuff[] backpack;
 	Stuff[] equipment;
 	string name;
-	uint64 r1;
+	uint32 diplomas;
+	t_energy energy;
+	uint16 r1;
 	uint64 r2;
 }
 
@@ -211,6 +216,18 @@ struct buycert
 {
 	t_name account;
 	t_amount price;
+}
+
+struct buyenergy
+{
+	ID worker_id;
+	t_amount rent_price;
+}
+
+struct buylicense
+{
+	t_name account;
+	t_type stuff_id;
 }
 
 struct chsale
@@ -253,6 +270,13 @@ struct doorder
 	t_amount amount;
 }
 
+struct dorepair
+{
+	ID loc_id;
+	ID worker_id;
+	t_utime duration;
+}
+
 struct dosearch
 {
 	ID loc_id;
@@ -285,6 +309,13 @@ struct endlocsale
 struct exitmember
 {
 	t_name account;
+}
+
+struct getdiploma
+{
+	ID worker_id;
+	t_byte dip_id;
+	t_amount price;
 }
 
 struct initstat
@@ -380,6 +411,17 @@ struct mkmineord
 	t_name alliance;
 }
 
+struct mkpremium
+{
+	t_name account;
+	t_amount days;
+}
+
+struct mkpremiumt
+{
+	t_name account;
+}
+
 struct mkpurchase
 {
 	t_name account;
@@ -395,6 +437,14 @@ struct mkpurchord
 	t_amount gold;
 	Stuff stuff;
 	ID dest_loc_id;
+	t_name alliance;
+}
+
+struct mkrepairord
+{
+	ID loc_id;
+	t_amount gold;
+	t_utime duration;
 	t_name alliance;
 }
 
@@ -493,6 +543,12 @@ struct reqmember
 	t_name aname;
 }
 
+struct retlicense
+{
+	ID worker_id;
+	Stuff stuff;
+}
+
 struct rmauction
 {
 	ID loc_id;
@@ -550,6 +606,12 @@ struct rnworker
 {
 	ID worker_id;
 	string name;
+}
+
+struct setbankp
+{
+	ID loc_id;
+	float32 percent;
 }
 
 struct setrole

@@ -14,14 +14,16 @@ import std.stdio;
 import std.string;
 import std.traits;
 
-alias uint64 = ulong;
-alias int64 = long;
-alias uint32 = uint;
-alias int32 = int;
-alias uint16 = ushort;
-alias int16 = short;
-alias uint8 = ubyte;
 alias int8 = byte;
+alias int16 = short;
+alias int32 = int;
+alias int64 = long;
+alias uint8 = ubyte;
+alias uint16 = ushort;
+alias uint32 = uint;
+alias uint64 = ulong;
+alias float32 = float;
+alias float64 = double;
 
 uint64_t charToBase32 (char c)
 {

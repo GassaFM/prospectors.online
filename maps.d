@@ -1357,6 +1357,13 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
+					if (buildings[buildId].name == "Bank")
+					{
+						hoverText ~= format
+						    (`, %.1f%% rate`, 0.1 *
+						    (locations[pos]
+						    .building.param + 50));
+					}
 					auto done = buildingDone[pos];
 					if (done < buildStepLength *
 					    buildSteps)
@@ -1387,7 +1394,9 @@ int main (string [] args)
 						hoverText ~= format
 						    (` level %s`, 2);
 						inUpgrade[buildId] += 1;
-						sign = buildings[buildId].sign;
+						sign = `<u>` ~
+						    buildings[buildId].sign ~
+						    `</u>`;
 						upgraded[buildId] += 1;
 					}
 					backgroundColor = mixColor
