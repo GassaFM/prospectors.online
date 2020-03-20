@@ -1328,6 +1328,8 @@ int main (string [] args)
 		writeHtmlHeader (file, title);
 		writeCoordRow (file);
 
+		Coord [] banks;
+
 		auto inProgress = new int [buildings.length];
 		auto completed = new int [buildings.length];
 		auto inUpgrade = new int [buildings.length];
@@ -1357,14 +1359,17 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
-					if (buildings[buildId].name == "Bank")
+					auto done = buildingDone[pos];
+					if (buildings[buildId].name ==
+					    "Bank" && done == buildStepLength *
+					    buildSteps)
 					{
 						hoverText ~= format
 						    (`, %.1f%% rate`, 0.1 *
 						    (locations[pos]
 						    .building.param + 50));
+						banks ~= pos;
 					}
-					auto done = buildingDone[pos];
 					if (done < buildStepLength *
 					    buildSteps)
 					{
@@ -1387,6 +1392,7 @@ int main (string [] args)
 						    (`&#10;upgrade: %s of %s`,
 						    done % buildStepLength,
 						    buildStepLength);
+						sign = `<u>&nbsp;</u>`;
 						inUpgrade[buildId] += 1;
 					}
 					else
@@ -1511,6 +1517,50 @@ int main (string [] args)
 		file.writeln (`<td style="text-align:right">`,
 		    upgraded.sum, `</td>`);
 		file.writeln (`</tr>`);
+
+		file.writeln (`</tbody>`);
+		file.writeln (`</table>`);
+		file.writefln (`<h2>Banks:</h2>`);
+		file.writeln (`<table border="1px" padding="2px">`);
+		file.writeln (`<tbody>`);
+
+		file.writeln (`<tr>`);
+		file.writefln (`<th class="plot" width="16px">&nbsp;</th>`);
+		file.writefln (`<th>Location</th>`);
+		file.writefln (`<th>Conversion fee</th>`);
+		file.writefln (`<th>Owner</th>`);
+		file.writefln (`<th>Alliance</th>`);
+		file.writeln (`</tr>`);
+
+		banks.schwartzSort !(pos =>
+		    tuple (locations[pos].building.param, pos));
+		foreach (const ref pos; banks)
+		{
+			auto owner = locations[pos].owner.text;
+			auto param = locations[pos].building.param;
+			auto curAlliance = (owner == "") ? "" :
+			    accounts[owner].alliance.text;
+			auto backgroundColor = (owner == "") ?
+			    0xEEEEEE : toColorHash (owner);
+
+			file.writeln (`<tr>`);
+			file.writefln (`<td class="plot" ` ~
+			    `width="16px" ` ~
+			    `style="background-color:#%06X">` ~
+			    `&nbsp;</td>`, backgroundColor);
+			file.writeln (`<td style="text-align:left">`,
+			    toCoordString (pos), `</td>`);
+			file.writefln (`<td style="text-align:center">` ~
+			    `%.1f%%</td>`, 0.1 *
+			    (locations[pos].building.param + 50));
+			file.writeln (`<td style='text-align:center;` ~
+			    `font-family:"Courier New", Courier, monospace'>` ~
+			    owner, `</td>`);
+			file.writeln (`<td style='text-align:center;` ~
+			    `font-family:"Courier New", Courier, monospace'>` ~
+			    curAlliance, `</td>`);
+			file.writeln (`</tr>`);
+		}
 
 		file.writeln (`</tbody>`);
 		file.writeln (`</table>`);
