@@ -1399,7 +1399,6 @@ int main (string [] args)
 					{
 						hoverText ~= format
 						    (` level %s`, 2);
-						inUpgrade[buildId] += 1;
 						sign = `<u>` ~
 						    buildings[buildId].sign ~
 						    `</u>`;
