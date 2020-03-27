@@ -40,6 +40,11 @@ compile refresh_log_buys.d -I ..
 compile refresh_log_sales.d -I ..
 popd || exit 1
 
+pushd banks || exit 1
+compile refresh_log_banks.d -I ..
+compile show_log_banks.d -I ..
+popd || exit 1
+
 echo Building...
 ./generate-map-css || exit 1
 cp map.css public_html/maps || exit 1
