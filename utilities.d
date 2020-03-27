@@ -38,7 +38,7 @@ bool isResource (int id)
 
 bool isTool (int id)
 {
-	return 17 <= id && id <= 24;
+	return (17 <= id && id <= 24) || (32 <= id && id <= 39);
 }
 
 auto parseBinary (T) (ref ubyte [] buffer)
@@ -153,7 +153,9 @@ void updateLogGeneric (alias doSpecific)
 	{
 		auto filledQuery = format (queryForm, query, wideCursor);
 		writeln ("updating ", query, ", cursor = ", wideCursor);
+		debug {writeln (filledQuery);}
 		auto raw = post (endPoint, filledQuery, connection);
+		debug {writeln (raw);}
 		auto cur = raw.parseJSON["data"]["searchTransactionsForward"];
 		auto newCursor = cur["cursor"].maybeStr;
 		if (newCursor == "")
