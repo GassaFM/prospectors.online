@@ -106,7 +106,8 @@ int main (string [] args)
 		long [string] earnByOwner;
 
 		string [] [] htmlLog;
-		foreach (i, line; banksLog)
+		int num = 0;
+		foreach (line; banksLog)
 		{
 			auto actor = line[3];
 			auto dataHex = line[4].hexStringToBinary;
@@ -208,9 +209,10 @@ int main (string [] args)
 			}
 
 			string [] curHtmlLog;
+			num += 1;
 			curHtmlLog ~= `<tr>`;
 			curHtmlLog ~= format (`<td class="amount">%s</td>`,
-			    i + 1);
+			    num);
 			curHtmlLog ~= format (`<td class="time">%s %s</td>`,
 			    line[0], line[1]);
 			curHtmlLog ~= format (`<td class="place">%s</td>`,
