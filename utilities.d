@@ -148,6 +148,7 @@ void updateLogGeneric (alias doSpecific)
 
 	auto connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
+	connection.addRequestHeader ("content-type", "text/plain");
 	auto logFile = File (sha256 ~ ".log", "ab");
 	while (true)
 	{

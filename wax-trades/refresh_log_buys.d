@@ -15,7 +15,7 @@ import utilities;
 
 alias thisToolName = moduleName !({});
 
-immutable string queryForm = `{"query": "{
+immutable string queryForm = `{"query": "query {
   searchTransactionsForward(query: \"%s\",
                             irreversibleOnly: true,
                             limit: 100,
