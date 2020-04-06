@@ -148,7 +148,6 @@ int main (string [] args)
 				loc = Coord (worker.loc_id);
 				owner = worker.owner.text;
 				amount = data.amount;
-				convByOwner[actor] += amount;
 			}
 			else if (line[2] == "mvstorgold")
 			{
