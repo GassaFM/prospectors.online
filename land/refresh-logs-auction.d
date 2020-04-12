@@ -73,6 +73,7 @@ void updateLog (string endPoint, string query)
 
 	auto connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
+	connection.addRequestHeader ("content-type", "application/json");
 	auto logFile = File (sha256 ~ ".log", "ab");
 	while (true)
 	{

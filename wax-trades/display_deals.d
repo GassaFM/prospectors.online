@@ -484,7 +484,7 @@ void doStats (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 52; // itemList.length.to !(int);
+	immutable int items = 60; // itemList.length.to !(int);
 	auto codeList = iota (1, 7).array ~ 31 ~
 	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
 	    iota (17, 25).array ~ iota (32, 40).array ~
@@ -712,7 +712,7 @@ void doStatsExtra (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 52; // itemList.length.to !(int);
+	immutable int items = 60; // itemList.length.to !(int);
 	auto codeList = iota (1, 7).array ~ 31 ~
 	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
 	    iota (17, 25).array ~ iota (32, 40).array ~
