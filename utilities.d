@@ -108,7 +108,7 @@ shared static this ()
 	    iota (40, 50).array ~ 51 ~
 	    iota (17, 25).array ~
 	    iota (32, 40).array ~ 53 ~
-	    iota (25, 31).array ~ 50 ~ iota (54, 56)).idup;
+	    iota (25, 31).array ~ 50 ~ iota (54, 56).array).idup;
 	codeBreaks = [52: true, 16: true, 51: true,
 	    24: true, 53: true, 55: true];
 }
