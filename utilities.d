@@ -1,5 +1,5 @@
 // Author: Ivan Kazmenko (gassa@mail.ru)
-module refresh_logs_buy;
+module utilities;
 import std.algorithm;
 import std.conv;
 import std.datetime;
@@ -129,6 +129,36 @@ struct Coord
 	}
 }
 
+int allowedSeconds;
+long nowUnix;
+
+shared static this ()
+{
+	nowUnix = Clock.currTime (UTC ()).toUnixTime ();
+	try
+	{
+		auto f = File ("utilities_config.txt", "rt");
+		allowedSeconds = f.readln.strip.to !(int);
+	}
+	catch (Exception e)
+	{
+		allowedSeconds = 86400;
+	}
+}
+
+shared static this ()
+{
+	try
+	{
+		auto f = File ("error.txt", "rt");
+	}
+	catch (Exception e)
+	{
+		return;
+	}
+	throw new Exception ("error.txt is present");
+}
+
 void updateLogGeneric (alias doSpecific)
     (string endPoint, string queryForm, string query)
 {
@@ -164,6 +194,7 @@ void updateLogGeneric (alias doSpecific)
 			writeln (query, " update complete");
 			break;
 		}
+		auto oldCursor = wideCursor;
 		wideCursor = newCursor;
 
 		string [] res;
@@ -181,6 +212,16 @@ void updateLogGeneric (alias doSpecific)
 			auto ts2 = SysTime.fromISOExtString (ts1, UTC ());
 			auto ts3 = ts2.toSimpleString;
 			auto timestamp = ts3[0..20];
+			auto curUnix = ts2.toUnixTime ();
+			if (nowUnix - curUnix > allowedSeconds)
+			{
+				auto f = File ("error.txt", "wt");
+				f.writeln (nowUnix);
+				f.writeln (curUnix);
+				f.writeln (oldCursor);
+				f.writeln (curCursor);
+				throw new Exception ("error.txt generated");
+			}
 
 			doSpecific (res, result["trace"],
 			    timestamp, curCursor);
