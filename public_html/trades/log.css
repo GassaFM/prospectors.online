@@ -1,0 +1,112 @@
+td a {
+  display:block;
+  white-space:nowrap;
+  width:100%;
+  color:#000000;
+  text-decoration:none;
+}
+
+.log {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  font-family: Tahoma, Geneva, sans-serif;
+  white-space: nowrap;
+}
+
+.time {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+}
+
+.name {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+}
+
+.self {
+  background-color: #C2D3FF;
+}
+
+.item {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: left;
+}
+
+.place {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.amount {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: right;
+}
+
+.land-auction {
+  background-color: #FFFFC0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.land-deal {
+  background-color: #E0FFE0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.land-confiscation {
+  background-color: #FFE0E0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.land-release {
+  background-color: #E7E7E7;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.deal-general {
+  background-color: #E0E0FF;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.deal-buying {
+  background-color: #FFE0E0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.deal-selling {
+  background-color: #E0FFE0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}

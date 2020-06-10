@@ -619,11 +619,51 @@ string allianceColor (string name)
 	return "";
 }
 
+struct DealList
+{
+	alias Deal = Tuple !(int, q{price}, int, q{quantity});
+
+	Deal [] deals;
+	long quantity = 0;
+	long gold = 0;
+	int medianPriceCache = NA;
+
+	@property auto medianPrice ()
+	{
+		if (medianPriceCache == NA)
+		{
+			medianPriceCache = 0;
+			sort (deals);
+			long halfQuantity = 0;
+			foreach (const ref deal; deals)
+			{
+				halfQuantity += deal.quantity;
+				if (halfQuantity * 2 >= quantity)
+				{
+					medianPriceCache = deal.price;
+					break;
+				}
+			}
+		}
+		return medianPriceCache;
+	}
+
+	ref DealList opOpAssign (string op) (const ref Record record)
+	    if (op == "+")
+	{
+		deals ~= Deal (record.price, record.amount);
+		quantity += deals.back.quantity;
+		gold += deals.back.quantity * 1L * deals.back.price;
+		return this;
+	}
+
+	@disable this (this);
+}
+
 void doStats (const ref Record [] records, string name)
 {
-	// The following does not work without the "Z"!
-	auto startDate = SysTime.fromSimpleString
-	    ("2019-Dec-02 00:00:00Z", UTC ());
+	// The following does not work with a string without the "Z"!
+	auto startDate = SysTime.fromSimpleString (startDateString, UTC ());
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
@@ -799,52 +839,10 @@ void doStats (const ref Record [] records, string name)
 	}
 }
 
-struct DealList
-{
-	alias Deal = Tuple !(int, q{price}, int, q{quantity});
-
-	Deal [] deals;
-	long quantity = 0;
-	long gold = 0;
-	int medianPriceCache = NA;
-
-	@property auto medianPrice ()
-	{
-		if (medianPriceCache == NA)
-		{
-			medianPriceCache = 0;
-			sort (deals);
-			long halfQuantity = 0;
-			foreach (const ref deal; deals)
-			{
-				halfQuantity += deal.quantity;
-				if (halfQuantity * 2 >= quantity)
-				{
-					medianPriceCache = deal.price;
-					break;
-				}
-			}
-		}
-		return medianPriceCache;
-	}
-
-	ref DealList opOpAssign (string op) (const ref Record record)
-	    if (op == "+")
-	{
-		deals ~= Deal (record.price, record.amount);
-		quantity += deals.back.quantity;
-		gold += deals.back.quantity * 1L * deals.back.price;
-		return this;
-	}
-
-	@disable this (this);
-}
-
 void doStatsExtra (const ref Record [] records, string name)
 {
-	// The following does not work without the "Z"!
-	auto startDate = SysTime.fromSimpleString
-	    ("2019-Dec-02 00:00:00Z", UTC ());
+	// The following does not work with a string without the "Z"!
+	auto startDate = SysTime.fromSimpleString (startDateString, UTC ());
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
@@ -1160,10 +1158,13 @@ T [] merge (alias pred, T) (T [] a, T [] b)
 	return res;
 }
 
+string startDateString;
+
 int main (string [] args)
 {
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
+	startDateString = File ("start_date.txt", "r").readln.strip;
 
 	auto buysQuery = "account:prospectorsc action:doorder";
 	auto buysLogName = buysQuery.sha256Of.format !("%(%02x%)") ~ ".log";
