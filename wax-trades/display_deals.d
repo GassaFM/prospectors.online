@@ -5,6 +5,7 @@ import std.algorithm;
 import std.conv;
 import std.datetime;
 import std.digest.sha;
+import std.file;
 import std.format;
 import std.json;
 import std.random;
@@ -194,9 +195,30 @@ auto saleRecord (const string [] input)
 	return res;
 }
 
-void doHtml (string name, const ref Record [] records)
+void doHtml (string name, const ref Record [] records, const Name account = "")
 {
 	File file;
+	string pathAdd = "";
+	string itemPart = "";
+	string shortName = name;
+	string accountPart = "";
+
+	if (shortName.canFind ('/'))
+	{
+		accountPart = shortName.until ('/').text;
+		mkdirRecurse (accountPart);
+		accountPart = " for " ~ accountPart;
+		pathAdd = "../";
+		shortName = shortName.find ('/').drop (1).text;
+	}
+	if (shortName.canFind ('.'))
+	{
+		itemPart = itemList[shortName.find ('.')
+		    .drop (1).to !(int)].name;
+		itemPart = itemPart ~ " ";
+		shortName = shortName.until ('.').text;
+	}
+	string title = itemPart ~ shortName ~ accountPart;
 
 	file = File (name ~ ".html", "wt");
 	file.writeln (`<!DOCTYPE html>`);
@@ -204,11 +226,14 @@ void doHtml (string name, const ref Record [] records)
 	file.writeln (`<meta http-equiv="content-type" ` ~
 	    `content="text/html; charset=UTF-8">`);
 	file.writeln (`<head>`);
-	file.writefln (`<title>%s</title>`, name);
-	file.writeln (`<link rel="stylesheet" href="log.css" ` ~
-	    `type="text/css">`);
+	file.writefln (`<title>%s</title>`, title);
+	file.writefln (`<link rel="stylesheet" href="%slog.css" ` ~
+	    `type="text/css">`, pathAdd);
 	file.writeln (`</head>`);
 	file.writeln (`<body>`);
+	file.writeln (`<h2>Log of `, title, `</h2>`);
+	file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
+	file.writefln (`<p><a href="trades.html">Back to trades page</a></p>`);
 	file.writeln (`<table class="log" style="width:100%">`);
 	file.writeln (`<tbody>`);
 	file.writeln (`<tr style="font-weight:bold ` ~
@@ -243,11 +268,13 @@ void doHtml (string name, const ref Record [] records)
 		file.writeln (`<td class="name">`,
 		    record.alliance.text != "" ? record.alliance.text :
 		    `&nbsp;`, `</td>`);
-		file.writeln (`<td class="name">`,
+		file.writeln (`<td class="name`,
+		    record.seller == account ? ` self` : ``, `">`,
 		    record.seller, `</td>`);
 		file.writeln (`<td class="place">`,
 		    record.location, `</td>`);
-		file.writeln (`<td class="name">`,
+		file.writeln (`<td class="name`,
+		    record.buyer == account ? ` self` : ``, `">`,
 		    record.buyer, `</td>`);
 		file.writeln (`<td class="item">`,
 		    record.item, `</td>`);
@@ -266,15 +293,62 @@ void doHtml (string name, const ref Record [] records)
 	file.close ();
 }
 
+struct AccountPage
+{
+	bool hasDeals;
+	bool hasBuys;
+	bool hasSales;
+}
+
+AccountPage [Name] accountPages;
+
 int [int] doRecords (const ref Record [] records, string kind)
 {
 	Record [] [int] recordsById;
+	Record [] [Name] recordsByAccount;
 	int [int] lastPrice;
-
-	foreach (record; records)
+	int numNew;
+	try
 	{
+		numNew = File (kind ~ ".position", "rb")
+		    .readln.strip.to !(int);
+	}
+	catch (Exception e)
+	{
+		numNew = 0;
+	}
+	numNew = records.length.to !(int) - numNew;
+
+	foreach (i, record; records)
+	{
+		void markAccountPage (Name cur)
+		{
+			if (record.type == RecordType.buying)
+			{
+				accountPages.require (cur).hasBuys = true;
+			}
+			else if (record.type == RecordType.selling)
+			{
+				accountPages.require (cur).hasSales = true;
+			}
+			else
+			{
+				assert (false);
+			}
+		}
+
 		auto itemId = record.itemId;
 		recordsById[itemId] ~= record;
+		if (i < numNew || record.seller in recordsByAccount)
+		{
+			markAccountPage (record.seller);
+			recordsByAccount[record.seller] ~= record;
+		}
+		if (i < numNew || record.buyer in recordsByAccount)
+		{
+			markAccountPage (record.buyer);
+			recordsByAccount[record.buyer] ~= record;
+		}
 		if (itemId !in lastPrice)
 		{
 			lastPrice[itemId] = record.price;
@@ -287,20 +361,19 @@ int [int] doRecords (const ref Record [] records, string kind)
 		doHtml (kind ~ format !(".%02d") (id), list);
 	}
 
+	foreach (account, list; recordsByAccount)
+	{
+		doHtml (format !("%s/") (account) ~ kind, list, account);
+	}
+
+	File (kind ~ ".position", "wb").writeln (records.length);
+
 	return lastPrice;
 }
 
 void doMainTradesPage (const ref int [int] lastPriceDeals,
     const ref int [int] lastPriceBuys, const ref int [int] lastPriceSales)
 {
-	auto items = itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ 31 ~
-	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
-	    iota (17, 25).array ~ iota (32, 40).array ~
-	    iota (25, 31).array ~ 50;
-	auto codeBreaks = [31: true, 16: true, 51: true,
-	    24: true, 39: true, 50: true];
-
 	File file;
 
 	file = File ("trades.html", "wt");
@@ -320,13 +393,26 @@ void doMainTradesPage (const ref int [int] lastPriceDeals,
 	file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
 	file.writeln (`<p><a href="..">Back to main page</a></p>`);
 
+	file.writeln (`<form id="account-form" onsubmit="return false;">`);
+	file.writeln (`<input type="text" id="account-name" label="account"/>`);
+	file.writeln (`<input type="submit" id="do" value="Filter by account"/>`);
+	file.writeln (`</form>`);
+	file.writeln (`<script>`);
+	file.writeln (`	window.onload = function () {`);
+	file.writeln (`	const accountForm = document.getElementById ('account-form');`);
+	file.writeln (`	document.getElementById ('do').addEventListener ('click', event => {`);
+	file.writeln (`	text = document.getElementById ('account-name').value;`);
+	file.writeln (`	if (text != '') {window.open ('./' + text + '/trades.html', '_self');}});}`);
+	file.writeln (`</script>`);
+	file.writeln (`<p height="5px"></p>`);
+
 	file.writeln (`<table border="1px" padding="2px">`);
 	file.writeln (`<thead>`);
-	file.writeln (`</thead>`);
 	file.writeln (`<tr>`);
 	file.writeln (`<th align="center" colspan="3">` ~
 	    `History by day</th>`);
 	file.writeln (`</tr>`);
+	file.writeln (`</thead>`);
 	file.writeln (`<tbody>`);
 	file.writeln (`<tr>`);
 	file.writeln (`<td align="center" width="33.3333%" ` ~
@@ -438,6 +524,63 @@ void doMainTradesPage (const ref int [int] lastPriceDeals,
 	file.close ();
 }
 
+void doAccountPages ()
+{
+	foreach (account, ref page; accountPages)
+	{
+		page.hasDeals |= page.hasBuys;
+		page.hasDeals |= page.hasSales;
+	}
+
+	foreach (account, ref page; accountPages)
+	{
+		File file;
+		file = File (account.text ~ "/" ~ "trades.html", "wt");
+		file.writeln (`<!DOCTYPE html>`);
+		file.writeln (`<html xmlns=` ~
+		    `"http://www.w3.org/1999/xhtml">`);
+		file.writeln (`<meta http-equiv="content-type" ` ~
+		    `content="text/html; charset=UTF-8">`);
+		file.writeln (`<head>`);
+		file.writeln (`<title>Trades for `, account.text, `</title>`);
+		file.writeln (`<link rel="stylesheet" ` ~
+		    `href="../log.css" type="text/css">`);
+		file.writeln (`</head>`);
+		file.writeln (`<body>`);
+
+		file.writeln (`<h2>Trades for `, account.text, `</h2>`);
+		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
+		file.writeln (`<p><a href="../trades.html">` ~
+		    `Back to all trades page</a></p>`);
+
+		file.writeln (`<table border="1px" padding="2px">`);
+		file.writeln (`<thead>`);
+		file.writeln (`<tr>`);
+		file.writeln (`<th align="center" colspan="3">` ~
+		    `History</th>`);
+		file.writeln (`</tr>`);
+		file.writeln (`</thead>`);
+		file.writeln (`<tbody>`);
+		file.writeln (`<tr>`);
+		file.writeln (`<td align="center" width="33.3333%" `,
+		    `class="place deal-general">`, page.hasDeals ?
+		    `<a href="deals.html">deals</a>` : `&nbsp;`, `</td>`);
+		file.writeln (`<td align="center" width="33.3333%" `,
+		    `class="place deal-buying">`, page.hasBuys ?
+		    `<a href="buys.html">buys</a>` : `&nbsp;`, `</td>`);
+		file.writeln (`<td align="center" width="33.3333%" `,
+		    `class="place deal-selling">`, page.hasSales ?
+		    `<a href="sales.html">sales</a>` : `&nbsp;`, `</td>`);
+		file.writeln (`</tr>`);
+		file.writeln (`</tbody>`);
+		file.writeln (`</table>`);
+
+		file.writeln (`</body>`);
+		file.writeln (`</html>`);
+		file.close ();
+	}
+}
+
 struct Alliance
 {
 	string name;
@@ -484,13 +627,6 @@ void doStats (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 60; // itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ 31 ~
-	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
-	    iota (17, 25).array ~ iota (32, 40).array ~
-	    iota (25, 31).array ~ 50;
-	auto codeBreaks = [31: true, 16: true, 51: true,
-	    24: true, 39: true, 50: true];
 
 	alias RecordRow = DealList [items];
 	RecordRow [] quantity;
@@ -712,13 +848,6 @@ void doStatsExtra (const ref Record [] records, string name)
 	immutable int hoursInDay = 24;
 	immutable int hourDuration = 60 * 60;
 	immutable int dayDuration = hourDuration * hoursInDay;
-	immutable int items = 60; // itemList.length.to !(int);
-	auto codeList = iota (1, 7).array ~ 31 ~
-	    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
-	    iota (17, 25).array ~ iota (32, 40).array ~
-	    iota (25, 31).array ~ 50;
-	auto codeBreaks = [31: true, 16: true, 51: true,
-	    24: true, 39: true, 50: true];
 
 	alias RecordRow = DealList [items];
 	RecordRow [] quantity;
@@ -1066,6 +1195,7 @@ int main (string [] args)
 	auto lastPriceSales = doRecords (recordsSales, "sales");
 
 	doMainTradesPage (lastPriceDeals, lastPriceBuys, lastPriceSales);
+	doAccountPages ();
 
 	alliances ~= Alliance ("ek", "#CCFFCC", "#00CC00", "#FF7777");
 
