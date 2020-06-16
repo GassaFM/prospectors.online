@@ -11,6 +11,36 @@ import std.range;
 import std.stdio;
 import std.string;
 
+int allowedSeconds;
+long nowUnix;
+
+shared static this ()
+{
+	nowUnix = Clock.currTime (UTC ()).toUnixTime ();
+	try
+	{
+		auto f = File ("utilities_config.txt", "rt");
+		allowedSeconds = f.readln.strip.to !(int);
+	}
+	catch (Exception e)
+	{
+		allowedSeconds = 86400;
+	}
+}
+
+shared static this ()
+{
+	try
+	{
+		auto f = File ("error.txt", "rt");
+	}
+	catch (Exception e)
+	{
+		return;
+	}
+	throw new Exception ("error.txt is present");
+}
+
 void updateLog (string endPoint, string query)
 {
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
@@ -47,6 +77,7 @@ void updateLog (string endPoint, string query)
 			writeln (query, " update complete");
 			break;
 		}
+		auto oldCursor = cursor;
 		cursor = newCursor;
 
 		string [] res;
@@ -57,6 +88,18 @@ void updateLog (string endPoint, string query)
 			auto ts2 = SysTime.fromISOExtString (ts1);
 			auto ts3 = ts2.toSimpleString;
 			auto timestamp = ts3[0..20];
+
+			auto curUnix = ts2.toUnixTime ();
+			if (nowUnix - curUnix > allowedSeconds)
+			{
+				auto f = File ("error.txt", "wt");
+				f.writeln (nowUnix);
+				f.writeln (curUnix);
+				f.writeln (oldCursor);
+				f.writeln (cursor);
+				throw new Exception ("error.txt generated");
+			}
+
 			foreach (action; t["lifecycle"]["transaction"]
 			    ["actions"].array)
 			{
