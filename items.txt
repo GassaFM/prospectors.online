@@ -51,8 +51,8 @@
 51 bank-license 1
 52 moss 1
 53 garden-knife 1
-54 donkey 1
-55 horse 1
+54 horse 1
+55 donkey 1
 56 item56 1
 57 item57 1
 58 item58 1
