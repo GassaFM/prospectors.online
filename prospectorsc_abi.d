@@ -97,7 +97,9 @@ struct LocModel
 	Building building;
 	t_amount coffee;
 	t_amount[] resources;
-	uint64 r2;
+	t_amount moss;
+	uint16 flags;
+	uint16 r2;
 }
 
 struct MarketModel
@@ -143,6 +145,14 @@ struct StatModel
 	int64 job_sum;
 	uint64 r1;
 	uint64 r2;
+}
+
+struct StorageModel
+{
+	ID loc_id;
+	StorageStuff[] stuffs;
+	LocJob[] jobs;
+	uint64 r0;
 }
 
 struct StorageStuff
@@ -358,6 +368,7 @@ struct mkbuildord
 
 struct mkbuyord
 {
+	t_name account;
 	ID loc_id;
 	t_amount gold;
 	t_type type_id;
@@ -450,6 +461,7 @@ struct mkrepairord
 
 struct mksale
 {
+	t_name account;
 	ID loc_id;
 	Stuff stuff;
 	t_amount price;
@@ -458,6 +470,7 @@ struct mksale
 
 struct mktransord
 {
+	t_name account;
 	ID loc_id;
 	t_amount gold;
 	Stuff stuff;
@@ -468,6 +481,13 @@ struct mktransord
 struct mkworld
 {
 	ID id;
+}
+
+struct mvpurchstor
+{
+	t_name account;
+	ID loc_id;
+	Stuff stuff;
 }
 
 struct mvpurchwrk
@@ -608,6 +628,20 @@ struct rnworker
 	string name;
 }
 
+struct seedloc
+{
+	ID loc_id;
+	t_type stuff_id;
+	t_amount amount;
+}
+
+struct sellstuff
+{
+	t_name account;
+	ID order_id;
+	t_amount amount;
+}
+
 struct setbankp
 {
 	ID loc_id;
@@ -648,5 +682,6 @@ alias locElement = LocModel;
 alias marketElement = MarketModel;
 alias orderElement = OrderModel;
 alias statElement = StatModel;
+alias storageElement = StorageModel;
 alias workerElement = WorkerModel;
 alias worldElement = WorldModel;
