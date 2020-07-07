@@ -17,6 +17,7 @@ import std.typecons;
 
 import prospectorsc_abi;
 import transaction;
+import utilities;
 
 alias thisToolName = moduleName !({});
 
@@ -137,6 +138,8 @@ string toAmountString (long value, bool isGold = false, byte doStrip = 1)
 
 int main (string [] args)
 {
+	prepare ();
+
 	auto now = Clock.currTime (UTC ());
 	auto nowString = now.toSimpleString[0..20];
 
@@ -147,6 +150,8 @@ int main (string [] args)
 
 	long [long] total;
 	long [string] [long] num;
+	long [long] totalStation;
+	long [string] [long] numStation;
 	string [string] alliance;
 	alliance[""] = "";
 
@@ -196,7 +201,32 @@ int main (string [] args)
 		}
 	}
 
-	auto items = itemList.length.to !(int);
+	auto storageJSON = File ("storage.allscopes.binary", "rb")
+	    .byLine.joiner.parseJSON;
+	foreach (ref table; storageJSON["tables"].array)
+	{
+		auto owner = table["scope"].str;
+		foreach (ref row; table["rows"].array)
+		{
+			auto hex = row["hex"].str.chunks (2).map !(value =>
+			    to !(ubyte) (value, 16)).array;
+			auto storage = parseBinary !(storageElement) (hex);
+			if (!hex.empty)
+			{
+				assert (false);
+			}
+
+			foreach (stuff; storage.stuffs)
+			{
+				auto typeId = stuff.type_id;
+				auto amount = stuff.amount;
+				num[typeId][owner] += amount;
+				numStation[typeId][owner] += amount;
+				total[typeId] += amount;
+				totalStation[typeId] += amount;
+			}
+		}
+	}
 
 	foreach (int id; 0..items)
 	{
@@ -237,6 +267,7 @@ int main (string [] args)
 		file.writefln (`<th>Account</th>`);
 		file.writefln (`<th>Alliance</th>`);
 		file.writefln (`<th>Amount of %s</th>`, itemName);
+		file.writefln (`<th>At station</th>`);
 		file.writeln (`</tr>`);
 		file.writeln (`</thead>`);
 		file.writeln (`<tbody>`);
@@ -253,6 +284,10 @@ int main (string [] args)
 		file.writefln (`<td>&nbsp;</td>`);
 		file.writeln (`<td style="text-align:right">`,
 		    toAmountString (total[id],
+		    !isResource (id) || itemName == "raw-gold", false),
+		    `</td>`);
+		file.writeln (`<td style="text-align:right">`,
+		    toAmountString (totalStation.get (id, 0),
 		    !isResource (id) || itemName == "raw-gold", false),
 		    `</td>`);
 		file.writeln (`</tr>`);
@@ -284,6 +319,12 @@ int main (string [] args)
 			    toAmountString (num[id][owner],
 			    !isResource (id) || itemName == "raw-gold", false),
 			    `</td>`);
+			file.writeln (`<td style="text-align:right">`,
+			    toAmountString (id in numStation &&
+			    owner in numStation[id] ?
+			    numStation[id][owner] : 0,
+			    !isResource (id) || itemName == "raw-gold", false),
+			    `</td>`);
 			file.writeln (`</tr>`);
 		}
 
@@ -298,13 +339,6 @@ int main (string [] args)
 
 	void doMainStoresPage ()
 	{
-		auto codeList = iota (1, 7).array ~ 31 ~
-		    iota (7, 17).array ~ iota (40, 50).array ~ 51 ~
-		    iota (17, 25).array ~ iota (32, 40).array ~
-		    iota (25, 31).array ~ 50;
-		auto codeBreaks = [31: true, 16: true, 51: true,
-		    24: true, 39: true, 50: true];
-
 		File file;
 
 		file = File ("stores.html", "wt");
@@ -332,6 +366,7 @@ int main (string [] args)
 		file.writeln (`<tr>`);
 		file.writefln (`<th>Item</th>`);
 		file.writefln (`<th>Total amount</th>`);
+		file.writefln (`<th>At station</th>`);
 		file.writefln (`<th>Tycoons (HTML)</th>`);
 		file.writefln (`<th>Tycoons (plain text)</th>`);
 		file.writeln (`</tr>`);
@@ -357,6 +392,10 @@ int main (string [] args)
 			    itemList[id].name, `</td>`);
 			file.writeln (`<td class="amount">`,
 			    toAmountString (total[id],
+			    !isResource (id) || itemName == "raw-gold", false),
+			    `</td>`);
+			file.writeln (`<td class="amount">`,
+			    toAmountString (totalStation.get (id, 0),
 			    !isResource (id) || itemName == "raw-gold", false),
 			    `</td>`);
 			file.writefln (`<td style="text-align:center">` ~
