@@ -1034,7 +1034,8 @@ int main (string [] args)
 			auto backgroundColorBuilding = 0xEEEEEE;
 			auto buildingDetails = "&nbsp;";
 			auto buildId = t.value.building.build_id;
-			if (buildId != 0)
+			if (buildId != 0 && buildings[buildId].name !=
+			    "Railway Station")
 			{
 				buildingDetails =
 				    buildings[buildId].name;
@@ -1072,7 +1073,8 @@ int main (string [] args)
 			}
 			string whiteFont;
 			immutable int colorThreshold = 0x80;
-			if (buildId != 0 &&
+			if (buildId != 0 && buildings[buildId].name !=
+			    "Railway Station" &&
 			    buildings[buildId].loColor.all !(c =>
 			    c < colorThreshold))
 			{
@@ -1355,7 +1357,8 @@ int main (string [] args)
 				auto hoverText = toCoordString (pos);
 				auto buildId =
 				    locations[pos].building.build_id;
-				if (buildId != 0)
+				if (buildId != 0 && buildings[buildId].name !=
+				    "Railway Station")
 				{
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
@@ -1428,7 +1431,8 @@ int main (string [] args)
 				}
 				string whiteFont;
 				immutable int colorThreshold = 0x80;
-				if (buildId != 0 &&
+				if (buildId != 0 && buildings[buildId].name !=
+				    "Railway Station" &&
 				    buildings[buildId].loColor.all !(c =>
 				    c < colorThreshold))
 				{
@@ -1471,7 +1475,8 @@ int main (string [] args)
 
 		foreach (ref building; buildings)
 		{
-			if (building == BuildingPlan.init)
+			if (building == BuildingPlan.init ||
+			    building.name == "Railway Station")
 			{
 				continue;
 			}

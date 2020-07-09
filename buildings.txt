@@ -12,3 +12,4 @@
 12	Coffee Factory	C	#7F5D3F	#72401C
 13	Coffee House	C	#83EEBD	#06CC6A
 14	Bank	B	#F7F3B7	#C7C397
+15	Railway Station	R	#AEAE46	#FEFEF0
