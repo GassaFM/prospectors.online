@@ -591,6 +591,7 @@ int main (string [] args)
 	resourceLimit["clay"]   = 18_000_000;
 	resourceLimit["ore"]    = 32_000_000;
 	resourceLimit["coffee"] =    300_000;
+	resourceLimit["moss"] =      300_000;
 
 	int [string] richLimit;
 	richLimit["gold"]       = 12_000_000;
@@ -613,6 +614,8 @@ int main (string [] args)
 	    pos => locations[pos].ore,    10 ^^ 6);
 	resTemplate ~= ResTemplate ("coffee",
 	    pos => locations[pos].coffee, 10 ^^ 4);
+	resTemplate ~= ResTemplate ("moss",
+	    pos => locations[pos].moss,   10 ^^ 4);
 	resTemplate ~= ResTemplate ("worker",
 	    pos => pos in workerNum ? workerNum[pos] : 0, 10 ^^ 0);
 
@@ -1164,6 +1167,8 @@ int main (string [] args)
 			file.writefln (`<th class="header" ` ~
 			    `id="col-coffee">Coffee</th>`);
 			file.writefln (`<th class="header" ` ~
+			    `id="col-moss">Moss</th>`);
+			file.writefln (`<th class="header" ` ~
 			    `id="col-building">Building</th>`);
 			file.writeln (`</tr>`);
 			file.writeln (`</thead>`);
@@ -1250,6 +1255,8 @@ int main (string [] args)
 			    `id="col-ore">Ore</th>`);
 			file.writefln (`<th class="header" ` ~
 			    `id="col-coffee">Coffee</th>`);
+			file.writefln (`<th class="header" ` ~
+			    `id="col-moss">Moss</th>`);
 			file.writefln (`<th class="header" ` ~
 			    `id="col-building">Building</th>`);
 			file.writeln (`</tr>`);
@@ -1812,10 +1819,12 @@ int main (string [] args)
 	doHtml (resTemplate[4..5]);
 	doHtml (resTemplate[5..6]);
 	doHtml (resTemplate[6..7]);
-	doHtml (resTemplate[1..3] ~ resTemplate[6]);
+	doHtml (resTemplate[7..8]);
+	doHtml (resTemplate[1..3] ~ resTemplate[6..7]);
+	doHtml (resTemplate[1..3] ~ resTemplate[7..8]);
 	doHtml (resTemplate[3..6]);
-	doHtml (resTemplate[0..7]);
-	doHtmlWorker (resTemplate[7..8]);
+	doHtml (resTemplate[0..8]);
+	doHtmlWorker (resTemplate[8..9]);
 	doHtmlRent ("rent", RentMapType.simple);
 	doHtmlRent ("rent-days", RentMapType.daysLeft);
 	doHtmlRent ("auction", RentMapType.auction);

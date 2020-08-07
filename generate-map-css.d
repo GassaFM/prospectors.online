@@ -20,7 +20,7 @@ void main ()
 	writeln (`  width: 1.785%;`);
 	writeln (`  height: 1.785%;`);
 	writeln (`  font-weight: bold;`);
-	writeln (`  font-size: 12px;`);
+	writeln (`  font-size: 10px;`);
 	writeln (`  border-style: solid;`);
 	writeln (`  border-width: 2px;`);
 	writeln (`}`);
@@ -90,6 +90,9 @@ void main ()
 	    [0xBBBBBB, 0xEEEEEE, 0x99CCEE, 0xBB88FF, 0x77FF77]);
 	generateResourceClasses ("coffee",  0, 30,
 	    [0xDC, 0xAB, 0x75], [0x72, 0x40, 0x1C],
+	    [0xBBBBBB, 0xEEEEEE, 0x99CCEE, 0xBB88FF, 0x77FF77], true);
+	generateResourceClasses ("moss",    0, 30,
+	    [0xCD, 0xDF, 0xAD], [0x8A, 0x9A, 0x5B],
 	    [0xBBBBBB, 0xEEEEEE, 0x99CCEE, 0xBB88FF, 0x77FF77], true);
 	generateResourceClasses ("worker",  0,  9,
 	    [0xCF, 0xCF, 0xEF], [0x7F, 0x7F, 0xDF],

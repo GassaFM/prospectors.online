@@ -18,13 +18,13 @@ alias t_utime = uint32;
 
 struct AccountModel
 {
-	Name name;
+	t_name name;
 	uint32 flags;
 	ID worker0;
 	ID worker1;
 	ID worker2;
 	Purchase[] purchases;
-	Name referer;
+	t_name referer;
 	t_balance balance;
 	t_balance referer_fee;
 	t_name alliance;
@@ -83,7 +83,7 @@ struct LocModel
 {
 	ID id;
 	ID world_id;
-	Name owner;
+	t_name owner;
 	t_utime rent_time;
 	string name;
 	t_amount gold;
@@ -126,7 +126,10 @@ struct OrderModel
 	ID item_tag;
 	int8 state;
 	t_name alliance;
-	uint64 r2;
+	t_byte is_stock;
+	t_byte r2;
+	uint16 r3;
+	uint32 r4;
 }
 
 struct Purchase
@@ -134,6 +137,33 @@ struct Purchase
 	ID loc_id;
 	Stuff stuff;
 	t_amount reserved;
+}
+
+struct RailOrderModel
+{
+	ID id;
+	t_name target;
+	t_name owner;
+	t_name recipient;
+	Stuff stuff;
+	t_amount price;
+	t_amount gold;
+	uint64 r1;
+	uint64 r2;
+}
+
+struct RailStateModel
+{
+	t_name target;
+	t_byte state;
+	t_utime time;
+	t_name last_index;
+	t_balance total_weight;
+	t_balance total_gold;
+	t_amount orders_cnt;
+	t_amount orders_done;
+	uint64 r1;
+	uint64 r2;
 }
 
 struct StatModel
@@ -183,7 +213,7 @@ struct WorkerJob
 struct WorkerModel
 {
 	ID id;
-	Name owner;
+	t_name owner;
 	ID loc_id;
 	ID prev_loc_id;
 	WorkerJob job;
@@ -192,7 +222,8 @@ struct WorkerModel
 	string name;
 	uint32 diplomas;
 	t_energy energy;
-	uint16 r1;
+	uint8 slots;
+	uint8 r1;
 	uint64 r2;
 }
 
@@ -240,6 +271,18 @@ struct buylicense
 	t_type stuff_id;
 }
 
+struct buywrkslot
+{
+	ID worker_id;
+	t_amount price;
+}
+
+struct chrailord
+{
+	ID order_id;
+	t_amount price;
+}
+
 struct chsale
 {
 	ID market_id;
@@ -255,6 +298,12 @@ struct dobuild
 	ID loc_id;
 	ID worker_id;
 	t_utime duration;
+}
+
+struct dodepart
+{
+	t_name target;
+	t_amount count;
 }
 
 struct domake
@@ -451,6 +500,15 @@ struct mkpurchord
 	t_name alliance;
 }
 
+struct mkrailord
+{
+	t_name account;
+	t_name target;
+	t_name recipient;
+	Stuff stuff;
+	t_amount price;
+}
+
 struct mkrepairord
 {
 	ID loc_id;
@@ -598,6 +656,11 @@ struct rmpurstuff
 	Stuff stuff;
 }
 
+struct rmrailord
+{
+	ID order_id;
+}
+
 struct rmsale
 {
 	ID market_id;
@@ -681,6 +744,9 @@ alias auctionElement = AuctionModel;
 alias locElement = LocModel;
 alias marketElement = MarketModel;
 alias orderElement = OrderModel;
+alias raildepartElement = RailOrderModel;
+alias railorderElement = RailOrderModel;
+alias railstateElement = RailStateModel;
 alias statElement = StatModel;
 alias storageElement = StorageModel;
 alias workerElement = WorkerModel;

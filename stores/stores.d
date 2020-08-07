@@ -21,48 +21,6 @@ import utilities;
 
 alias thisToolName = moduleName !({});
 
-alias ItemPlan = Tuple !(long, q{id}, string, q{name}, int, q{weight});
-
-bool isResource (int id)
-{
-	return 1 <= id && id <= 6 || id == 31;
-}
-
-auto parseBinary (T) (ref ubyte [] buffer)
-{
-	static if (is (Unqual !(T) == E [], E))
-	{
-		size_t len; // for sizes > 127, should use VarInt32 here
-		len = parseBinary !(byte) (buffer);
-		E [] res;
-		res.reserve (len);
-		foreach (i; 0..len)
-		{
-			res ~= parseBinary !(E) (buffer);
-		}
-		return res;
-	}
-	else static if (is (T == struct))
-	{
-		T res;
-		alias fieldNames = FieldNameTuple !(T);
-		alias fieldTypes = FieldTypeTuple !(T);
-		static foreach (i; 0..fieldNames.length)
-		{
-			mixin ("res." ~ fieldNames[i]) =
-			    parseBinary !(fieldTypes[i]) (buffer);
-		}
-		return res;
-	}
-	else
-	{
-		enum len = T.sizeof;
-		T res = *(cast (T *) (buffer.ptr));
-		buffer = buffer[len..$];
-		return res;
-	}
-}
-
 int toColorHash (string name)
 {
 	auto d = md5Of (name);
