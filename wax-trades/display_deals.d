@@ -86,7 +86,7 @@ string toAmountString (long value, bool isGold = false, byte doStrip = 1)
 	}
 }
 
-enum RecordType : bool {buying, selling};
+enum RecordType : byte {buying, selling, station};
 immutable int NA = -1;
 
 struct Record
@@ -113,11 +113,11 @@ string itemNameWithHealth (int typeId, int health)
 	return res;
 }
 
-auto buyRecord (const string [] input)
+auto buyRecord (const string [] input, const RecordType type)
 {
 	auto res = Record ();
 	res.timeStamp = input[0];
-	res.type = RecordType.buying;
+	res.type = type;
 
 	auto actor = Name (input[1]);
 
@@ -262,8 +262,8 @@ void doHtml (string name, const ref Record [] records, const Name account = "")
 		file.writeln (`<td class="time">`,
 		    record.timeStamp, `</td>`);
 		file.writeln (`<td class="name deal-`,
-		    ["buying", "selling"][record.type], `">`,
-		    ["buy order", "market sale"][record.type],
+		    ["buying", "selling", "station"][record.type], `">`,
+		    ["buy order", "market sale", "station deal"][record.type],
 		    `</td>`);
 		file.writeln (`<td class="name">`,
 		    record.alliance.text != "" ? record.alliance.text :
@@ -330,6 +330,10 @@ int [int] doRecords (const ref Record [] records, string kind)
 			else if (record.type == RecordType.selling)
 			{
 				accountPages.require (cur).hasSales = true;
+			}
+			else if (record.type == RecordType.station)
+			{
+				accountPages.require (cur).hasBuys = true;
 			}
 			else
 			{
@@ -1170,13 +1174,28 @@ int main (string [] args)
 	auto buysLogName = buysQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 
 	auto recordsBuys = File (buysLogName).byLineCopy
-	    .map !(line => line.strip.split ("\t")).map !(buyRecord).array;
+	    .map !(line => line.strip.split ("\t"))
+	    .map !(line => line.buyRecord (RecordType.buying)).array;
 
 	auto salesQuery = "account:prospectorsc action:mkpurchase";
 	auto salesLogName = salesQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 
 	auto recordsSales = File (salesLogName).byLineCopy
 	    .map !(line => line.strip.split ("\t")).map !(saleRecord).array;
+
+	auto stationQuery = "account:prospectorsc action:sellstuff";
+	auto stationLogName =
+	    stationQuery.sha256Of.format !("%(%02x%)") ~ ".log";
+
+	auto recordsStation = File (stationLogName).byLineCopy
+	    .map !(line => line.strip.split ("\t"))
+	    .map !(line => line.buyRecord (RecordType.station)).array;
+
+	recordsBuys = merge !((a, b) =>
+	    DateTime.fromSimpleString (a.timeStamp) <
+	    DateTime.fromSimpleString (b.timeStamp))
+	    (recordsBuys, recordsStation)
+	    .array;
 
 	auto records = merge !((a, b) =>
 	    DateTime.fromSimpleString (a.timeStamp) <

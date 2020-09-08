@@ -121,6 +121,13 @@ ubyte [] toBinary (T) (T value)
 			res ~= element.toBinary;
 		}
 	}
+	else static if (is (T == struct))
+	{
+		static foreach (field; FieldNameTuple !(T))
+		{
+			res ~= mixin ("value." ~ field).toBinary;
+		}
+	}
 	else
 	{
 		res ~= * (cast (ubyte [T.sizeof] *) (&value));

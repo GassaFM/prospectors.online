@@ -33,7 +33,7 @@ string maybeStr () (const auto ref JSONValue value)
 
 bool isResource (int id)
 {
-	return 1 <= id && id <= 6 || id == 31;
+	return 1 <= id && id <= 6 || id == 31 || id == 52;
 }
 
 bool isTool (int id)

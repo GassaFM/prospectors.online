@@ -1,8 +1,17 @@
+td a {
+  display:block;
+  white-space:nowrap;
+  width:100%;
+  color:#000000;
+  text-decoration:none;
+}
+
 .log {
   border-style: solid;
   border-width: 1px;
   padding: 2px;
   font-family: Tahoma, Geneva, sans-serif;
+  white-space: nowrap;
 }
 
 .time {
@@ -19,6 +28,10 @@
   padding: 2px;
   font-family: "Courier New", Courier, monospace;
   text-align: center;
+}
+
+.self {
+  background-color: #C2D3FF;
 }
 
 .item {
@@ -74,6 +87,14 @@
   text-align: center;
 }
 
+.deal-general {
+  background-color: #E0E0FF;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
 .deal-buying {
   background-color: #FFE0E0;
   border-style: solid;
@@ -84,6 +105,14 @@
 
 .deal-selling {
   background-color: #E0FFE0;
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: center;
+}
+
+.deal-station {
+  background-color: #FFD0F0;
   border-style: solid;
   border-width: 1px;
   padding: 2px;
