@@ -145,6 +145,13 @@ void updateLog (string endPoint, string query)
 					    .integer.text;
 				}
 				buf ~= coffee;
+				auto moss = "0";
+				if ("moss" in locFrom)
+				{
+					moss = locFrom["moss"]
+					    .integer.text;
+				}
+				buf ~= moss;
 				buf ~= locFrom["building"]["build_id"]
 				    .integer.text;
 				buf ~= locFrom["building"]["build_step"]

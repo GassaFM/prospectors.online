@@ -305,13 +305,13 @@ int main (string [] args)
 			}
 			auto backgroundColorBuilding = 0xEEEEEE;
 			auto buildingDetails = "&nbsp;";
-			auto buildId = line[15].to !(int);
+			auto buildId = line[16].to !(int);
 			if (buildId != 0)
 			{
 				buildingDetails =
 				    buildings[buildId].name;
-				auto done = line[17].to !(int) +
-				    buildStepLength * line[16].to !(int);
+				auto done = line[18].to !(int) +
+				    buildStepLength * line[17].to !(int);
 				if (done < buildStepLength * buildSteps)
 				{
 					buildingDetails ~= format
