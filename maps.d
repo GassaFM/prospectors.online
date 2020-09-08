@@ -591,6 +591,7 @@ int main (string [] args)
 	resourceLimit["clay"]   = 18_000_000;
 	resourceLimit["ore"]    = 32_000_000;
 	resourceLimit["coffee"] =    300_000;
+	resourceLimit["moss"] =      300_000;
 
 	int [string] richLimit;
 	richLimit["gold"]       = 12_000_000;
@@ -613,6 +614,8 @@ int main (string [] args)
 	    pos => locations[pos].ore,    10 ^^ 6);
 	resTemplate ~= ResTemplate ("coffee",
 	    pos => locations[pos].coffee, 10 ^^ 4);
+	resTemplate ~= ResTemplate ("moss",
+	    pos => locations[pos].moss,   10 ^^ 4);
 	resTemplate ~= ResTemplate ("worker",
 	    pos => pos in workerNum ? workerNum[pos] : 0, 10 ^^ 0);
 
@@ -1034,7 +1037,8 @@ int main (string [] args)
 			auto backgroundColorBuilding = 0xEEEEEE;
 			auto buildingDetails = "&nbsp;";
 			auto buildId = t.value.building.build_id;
-			if (buildId != 0)
+			if (buildId != 0 && buildings[buildId].name !=
+			    "Railway Station")
 			{
 				buildingDetails =
 				    buildings[buildId].name;
@@ -1064,15 +1068,32 @@ int main (string [] args)
 					buildingDetails ~= format
 					    (`, level %d`, 2);
 				}
+				else if (buildStepLength *
+				    (buildSteps + 1) < done &&
+				    done < buildStepLength *
+				    (buildSteps + 2))
+				{
+					buildingDetails ~= format
+					    (`, level %d, %d%% upgraded`, 2,
+					    (done % buildStepLength) * 100L /
+					    buildStepLength);
+				}
+				else if (done == buildStepLength *
+				    (buildSteps + 2))
+				{
+					buildingDetails ~= format
+					    (`, level %d`, 3);
+				}
 				backgroundColorBuilding = mixColor
 				    (buildings[buildId].loColor,
 				    buildings[buildId].hiColor,
 				    0, done, buildStepLength *
-				    buildSteps + 1).toColorInt;
+				    (buildSteps + 2)).toColorInt;
 			}
 			string whiteFont;
 			immutable int colorThreshold = 0x80;
-			if (buildId != 0 &&
+			if (buildId != 0 && buildings[buildId].name !=
+			    "Railway Station" &&
 			    buildings[buildId].loColor.all !(c =>
 			    c < colorThreshold))
 			{
@@ -1162,6 +1183,8 @@ int main (string [] args)
 			file.writefln (`<th class="header" ` ~
 			    `id="col-coffee">Coffee</th>`);
 			file.writefln (`<th class="header" ` ~
+			    `id="col-moss">Moss</th>`);
+			file.writefln (`<th class="header" ` ~
 			    `id="col-building">Building</th>`);
 			file.writeln (`</tr>`);
 			file.writeln (`</thead>`);
@@ -1249,6 +1272,8 @@ int main (string [] args)
 			file.writefln (`<th class="header" ` ~
 			    `id="col-coffee">Coffee</th>`);
 			file.writefln (`<th class="header" ` ~
+			    `id="col-moss">Moss</th>`);
+			file.writefln (`<th class="header" ` ~
 			    `id="col-building">Building</th>`);
 			file.writeln (`</tr>`);
 			file.writeln (`</thead>`);
@@ -1334,6 +1359,8 @@ int main (string [] args)
 		auto completed = new int [buildings.length];
 		auto inUpgrade = new int [buildings.length];
 		auto upgraded = new int [buildings.length];
+		auto inUpgrade2 = new int [buildings.length];
+		auto upgraded2 = new int [buildings.length];
 		foreach (row; minRow..maxRow + 1)
 		{
 			file.writeln (`<tr>`);
@@ -1355,7 +1382,8 @@ int main (string [] args)
 				auto hoverText = toCoordString (pos);
 				auto buildId =
 				    locations[pos].building.build_id;
-				if (buildId != 0)
+				if (buildId != 0 && buildings[buildId].name !=
+				    "Railway Station")
 				{
 					hoverText ~= `&#10;` ~
 					    buildings[buildId].name;
@@ -1395,7 +1423,8 @@ int main (string [] args)
 						sign = `<u>&nbsp;</u>`;
 						inUpgrade[buildId] += 1;
 					}
-					else
+					else if (done == buildStepLength *
+					    (buildSteps + 1))
 					{
 						hoverText ~= format
 						    (` level %s`, 2);
@@ -1404,11 +1433,31 @@ int main (string [] args)
 						    `</u>`;
 						upgraded[buildId] += 1;
 					}
+					else if (done < buildStepLength *
+					    (buildSteps + 2))
+					{
+						hoverText ~= format
+						    (` level %s` ~
+						    `&#10;upgrade: %s of %s`,
+						    2, done % buildStepLength,
+						    buildStepLength);
+						sign = `<b><u>&nbsp;</u></b>`;
+						inUpgrade2[buildId] += 1;
+					}
+					else
+					{
+						hoverText ~= format
+						    (` level %s`, 3);
+						sign = `<b><u>` ~
+						    buildings[buildId].sign ~
+						    `</u></b>`;
+						upgraded2[buildId] += 1;
+					}
 					backgroundColor = mixColor
 					    (buildings[buildId].loColor,
 					    buildings[buildId].hiColor,
 					    0, done, buildStepLength *
-					    (buildSteps + 1)).toColorInt;
+					    (buildSteps + 2)).toColorInt;
 				}
 				if (pos == Coord (0, 0))
 				{
@@ -1428,7 +1477,8 @@ int main (string [] args)
 				}
 				string whiteFont;
 				immutable int colorThreshold = 0x80;
-				if (buildId != 0 &&
+				if (buildId != 0 && buildings[buildId].name !=
+				    "Railway Station" &&
 				    buildings[buildId].loColor.all !(c =>
 				    c < colorThreshold))
 				{
@@ -1467,11 +1517,14 @@ int main (string [] args)
 		file.writefln (`<th>Level 1</th>`);
 		file.writefln (`<th>1 &gt;&gt;&gt; 2</th>`);
 		file.writefln (`<th>Level 2</th>`);
+		file.writefln (`<th>2 &gt;&gt;&gt; 3</th>`);
+		file.writefln (`<th>Level 3</th>`);
 		file.writeln (`</tr>`);
 
 		foreach (ref building; buildings)
 		{
-			if (building == BuildingPlan.init)
+			if (building == BuildingPlan.init ||
+			    building.name == "Railway Station")
 			{
 				continue;
 			}
@@ -1499,6 +1552,10 @@ int main (string [] args)
 			    inUpgrade[building.id.to !(int)], `</td>`);
 			file.writeln (`<td style="text-align:right">`,
 			    upgraded[building.id.to !(int)], `</td>`);
+			file.writeln (`<td style="text-align:right">`,
+			    inUpgrade2[building.id.to !(int)], `</td>`);
+			file.writeln (`<td style="text-align:right">`,
+			    upgraded2[building.id.to !(int)], `</td>`);
 			file.writeln (`</tr>`);
 		}
 
@@ -1515,6 +1572,10 @@ int main (string [] args)
 		    inUpgrade.sum, `</td>`);
 		file.writeln (`<td style="text-align:right">`,
 		    upgraded.sum, `</td>`);
+		file.writeln (`<td style="text-align:right">`,
+		    inUpgrade2.sum, `</td>`);
+		file.writeln (`<td style="text-align:right">`,
+		    upgraded2.sum, `</td>`);
 		file.writeln (`</tr>`);
 
 		file.writeln (`</tbody>`);
@@ -1807,10 +1868,12 @@ int main (string [] args)
 	doHtml (resTemplate[4..5]);
 	doHtml (resTemplate[5..6]);
 	doHtml (resTemplate[6..7]);
-	doHtml (resTemplate[1..3] ~ resTemplate[6]);
+	doHtml (resTemplate[7..8]);
+	doHtml (resTemplate[1..3] ~ resTemplate[6..7]);
+	doHtml (resTemplate[1..3] ~ resTemplate[7..8]);
 	doHtml (resTemplate[3..6]);
-	doHtml (resTemplate[0..7]);
-	doHtmlWorker (resTemplate[7..8]);
+	doHtml (resTemplate[0..8]);
+	doHtmlWorker (resTemplate[8..9]);
 	doHtmlRent ("rent", RentMapType.simple);
 	doHtmlRent ("rent-days", RentMapType.daysLeft);
 	doHtmlRent ("auction", RentMapType.auction);

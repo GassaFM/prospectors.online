@@ -196,16 +196,8 @@ int main (string [] args)
 	auto buildings = Building.init ~ File ("../buildings.txt", "rt")
 	    .byLineCopy.map !(line => Building (line)).array;
 
-	int [string] resourceLimit;
-	resourceLimit["gold"]  = 32_000_000;
-	resourceLimit["wood"]  = 50_000_000;
-	resourceLimit["stone"] = 53_000_000;
-	resourceLimit["coal"]  = 23_000_000;
-	resourceLimit["clay"]  = 18_000_000;
-	resourceLimit["ore"]   = 32_000_000;
-
 	string [] resNames = ["gold", "wood", "stone",
-	    "coal", "clay", "ore", "coffee"];
+	    "coal", "clay", "ore", "coffee", "moss"];
 
 	auto fileName = sha256Of ("account:prospectorsc " ~
 	    "(action:endauction OR action:endlocexpr OR action:endlocsale" ~
@@ -272,6 +264,8 @@ int main (string [] args)
 		file.writefln (`<th class="header" ` ~
 		    `id="col-coffee">Coffee</th>`);
 		file.writefln (`<th class="header" ` ~
+		    `id="col-coffee">Moss</th>`);
+		file.writefln (`<th class="header" ` ~
 		    `id="col-building">Building</th>`);
 		file.writeln (`</tr>`);
 		file.writeln (`</thead>`);
@@ -301,7 +295,7 @@ int main (string [] args)
 			file.writeln (`<td class="amount">`,
 			    toCommaNumber (line[7].to !(long) / (60 * 60 * 24),
 			    true), `</td>`);
-			foreach (r; 0..7)
+			foreach (r; 0..8)
 			{
 				file.writefln (`<td class="plot %s-%s">` ~
 				    `%s</td>`, resNames[r],
@@ -318,7 +312,7 @@ int main (string [] args)
 				    buildings[buildId].name;
 				auto done = line[17].to !(int) +
 				    buildStepLength * line[16].to !(int);
-				if (done != buildStepLength * buildSteps)
+				if (done < buildStepLength * buildSteps)
 				{
 					buildingDetails ~= format
 					    (`, %d%% built`,
@@ -326,11 +320,40 @@ int main (string [] args)
 					    (buildStepLength *
 					    buildSteps));
 				}
+				else if (buildStepLength * buildSteps < done &&
+				    done < buildStepLength * (buildSteps + 1))
+				{
+					buildingDetails ~= format
+					    (`, %d%% upgraded`,
+					    (done % buildStepLength) * 100L /
+					    buildStepLength);
+				}
+				else if (done ==
+				    buildStepLength * (buildSteps + 1))
+				{
+					buildingDetails ~= format
+					    (`, level %d`, 2);
+				}
+				else if (buildStepLength * (buildSteps + 1) <
+				    done &&
+				    done < buildStepLength * (buildSteps + 2))
+				{
+					buildingDetails ~= format
+					    (`, level %d, %d%% upgraded`, 2,
+					    (done % buildStepLength) * 100L /
+					    buildStepLength);
+				}
+				else if (done ==
+				    buildStepLength * (buildSteps + 2))
+				{
+					buildingDetails ~= format
+					    (`, level %d`, 3);
+				}
 				backgroundColorBuilding = mixColor
 				    (buildings[buildId].loColor,
 				    buildings[buildId].hiColor,
 				    0, done, buildStepLength *
-				    buildSteps).toColorInt;
+				    (buildSteps + 2)).toColorInt;
 			}
 			string whiteFont;
 			immutable int colorThreshold = 0x80;

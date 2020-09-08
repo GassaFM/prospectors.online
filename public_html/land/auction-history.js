@@ -27,8 +27,10 @@ document.getElementById ('col-ore').addEventListener ('click', event =>
 	{sortTable (tableToSort, 13 * 3, -1, 'num');});
 document.getElementById ('col-coffee').addEventListener ('click', event =>
 	{sortTable (tableToSort, 14 * 3, -1, 'num');});
+document.getElementById ('col-moss').addEventListener ('click', event =>
+	{sortTable (tableToSort, 15 * 3, -1, 'num');});
 document.getElementById ('col-building').addEventListener ('click', event =>
-	{sortTable (tableToSort, 15 * 3, +1, 'str');});
+	{sortTable (tableToSort, 16 * 3, +1, 'str');});
 
 function sortTable (table, col, dir, type) {
 	const body = table.querySelector ('tbody');
