@@ -15,7 +15,7 @@ import utilities;
 
 alias thisToolName = moduleName !({});
 
-immutable string queryForm = `{"query": "query {
+immutable string queryForm = `{"query": "{
   searchTransactionsForward(query: \"%s\",
                             irreversibleOnly: true,
                             limit: 100,
@@ -83,9 +83,11 @@ void updateLogBuys (ref string [] res, const ref JSONValue resultTrace,
 
 int main (string [] args)
 {
+	auto gameAccount = args[1];
+
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
-	updateLogGeneric !(updateLogBuys) (args[1],
-	    queryForm, "account:prospectorsc action:doorder");
+	updateLogGeneric !(updateLogBuys) (args[2],
+	    queryForm, "account:" ~ gameAccount ~ " action:doorder");
 	return 0;
 }

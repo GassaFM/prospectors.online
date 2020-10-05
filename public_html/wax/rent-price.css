@@ -1,0 +1,29 @@
+.rent-price {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  font-family: Tahoma, Geneva, sans-serif;
+}
+
+.time {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  font-family: "Courier New", Courier, monospace;
+  text-align: center;
+}
+
+.data {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: right;
+  font-weight: bold;
+}
+
+.amount {
+  border-style: solid;
+  border-width: 1px;
+  padding: 2px;
+  text-align: right;
+}

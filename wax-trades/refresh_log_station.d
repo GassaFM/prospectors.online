@@ -83,9 +83,11 @@ void updateLogStation (ref string [] res, const ref JSONValue resultTrace,
 
 int main (string [] args)
 {
+	auto gameAccount = args[1];
+
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
-	updateLogGeneric !(updateLogStation) (args[1],
-	    queryForm, "account:prospectorsc action:sellstuff");
+	updateLogGeneric !(updateLogStation) (args[2],
+	    queryForm, "account:" ~ gameAccount ~ " action:sellstuff");
 	return 0;
 }

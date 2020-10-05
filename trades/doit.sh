@@ -1,8 +1,9 @@
 #!/bin/bash
 cd "${0%/*}"
-../wax-trades/refresh_log_buys "https://mainnet.eos.dfuse.io/graphql" | tee -a buys-log.txt || exit 1
-../wax-trades/refresh_log_sales "https://mainnet.eos.dfuse.io/graphql" | tee -a sales-log.txt || exit 1
-../wax-trades/display_deals || exit 1
+../wax-trades/refresh_log_buys prospectorsc "https://mainnet.eos.dfuse.io/graphql" | tee -a buys-log.txt || exit 1
+../wax-trades/refresh_log_sales prospectorsc "https://mainnet.eos.dfuse.io/graphql" | tee -a sales-log.txt || exit 1
+../wax-trades/refresh_log_station prospectorsc "https://mainnet.eos.dfuse.io/graphql" | tee -a station-log.txt || exit 1
+../wax-trades/display_deals prospectorsc || exit 1
 mv *.html ../public_html/trades/ || exit 1
 shopt -s dotglob nullglob
 for account in */ ; do

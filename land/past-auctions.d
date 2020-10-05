@@ -185,8 +185,10 @@ string auctionClass (int type)
 
 int main (string [] args)
 {
+	auto gameAccount = args[1];
+
 	immutable int buildStepLength =
-	    (args.length > 1 && args[1] == "testnet") ? 1500 : 15000;
+	    (args.length > 2 && args[2] == "testnet") ? 1500 : 15000;
 	immutable int buildSteps = 3;
 
 	auto nowTime = Clock.currTime (UTC ());
@@ -199,14 +201,14 @@ int main (string [] args)
 	string [] resNames = ["gold", "wood", "stone",
 	    "coal", "clay", "ore", "coffee", "moss"];
 
-	auto fileName = sha256Of ("account:prospectorsc " ~
+	auto fileName = sha256Of ("account:" ~ gameAccount ~ " " ~
 	    "(action:endauction OR action:endlocexpr OR action:endlocsale" ~
 	    " OR action:mkfreeloc)")
 	    .format !("%(%02x%)") ~ ".log";
 	auto auctionLog = File (fileName, "rb").byLineCopy.map !(split).array;
 	auctionLog.schwartzSort !(line =>
 	    tuple (line[0], line[1], toCoord (line[4].to !(long))), q{a > b});
-
+	
 	void doHtmlAuctionHistory (string name, bool delegate (int) pred)
 	{
 		auto title = name;

@@ -75,8 +75,8 @@ JSONValue getTableAtMoment (TimeType) (string tableName, TimeType t)
 	{
 		auto raw = getWithData
 		    (endPointTable,
-		    ["account": "prospectorsc",
-		    "scope": "prospectorsc",
+		    ["account": gameAccount,
+		    "scope": gameAccount,
 		    "table": tableName,
 		    "block_num": blockNumber.text,
 		    "with_block_num": "false",
@@ -136,12 +136,16 @@ auto parseBinaryByValue (T, R) (R range)
 	return res;
 }
 
+string gameAccount;
+
 int main (string [] args)
 {
+	gameAccount = args[1];
+
 	auto dfuseToken = File ("../dfuse.token").readln.strip;
-	endPointBlockId = args[1];
-	endPointTable = args[2];
-	auto isTestnet = (args.length > 5 && args[5] == "testnet");
+	endPointBlockId = args[2];
+	endPointTable = args[3];
+	auto isTestnet = (args.length > 6 && args[6] == "testnet");
 
 	connection = HTTP ();
 	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
@@ -176,7 +180,7 @@ int main (string [] args)
 		{
 			names = accounts
 			    .map !(account => account.name.text).array;
-			names = names.filter !(line => line != "prospectorsc")
+			names = names.filter !(line => line != gameAccount)
 			    .array;
 		}
 		else
@@ -280,9 +284,9 @@ int main (string [] args)
 		}
 
 		long [string] withdrawals;
-		auto withdrawalsName =
-		    sha256Of (args[3])
+		auto withdrawalsName = sha256Of (args[4])
 		    .format !("%(%02x%)") ~ ".log";
+		writeln (args[4], " ", withdrawalsName);
 		foreach (line; File (withdrawalsName).byLineCopy.map !(split))
 		{
 			auto moment = SysTime.fromSimpleString
@@ -312,8 +316,9 @@ int main (string [] args)
 		}
 
 		long [string] deposits;
-		auto depositsName = sha256Of (args[4])
+		auto depositsName = sha256Of (args[5])
 		    .format !("%(%02x%)") ~ ".log";
+		writeln (args[5], " ", depositsName);
 		foreach (line; File (depositsName).byLineCopy.map !(split))
 		{
 			auto moment = SysTime.fromSimpleString
@@ -335,7 +340,7 @@ int main (string [] args)
 				assert (false);
 			}
 			auto to = hexData.parseBinary !(Name);
-			if (to.toString != "prospectorsc")
+			if (to.toString != gameAccount)
 			{
 				assert (false);
 			}
@@ -356,7 +361,7 @@ int main (string [] args)
 		long [string] goldFT;
 		bool showFT = true;
 		auto queryFT = "account:simpleassets " ~
-		    "action:transferf data.to:prospectorsc";
+		    "action:transferf data.to:" ~ gameAccount;
 		try
 		{
 			auto ftName = queryFT.sha256Of.format !("%(%02x%)");
@@ -548,7 +553,7 @@ int main (string [] args)
 		file.close ();
 	}
 
-	foreach (name; args.drop (5 + isTestnet).chain (only ("all")))
+	foreach (name; args.drop (6 + isTestnet).chain (only ("all")))
 	{
 		doHtmlBalances (name);
 	}

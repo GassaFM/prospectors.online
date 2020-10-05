@@ -1166,24 +1166,26 @@ string startDateString;
 
 int main (string [] args)
 {
+	auto gameAccount = args[1];
+
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
 	startDateString = File ("start_date.txt", "r").readln.strip;
 
-	auto buysQuery = "account:prospectorsc action:doorder";
+	auto buysQuery = "account:" ~ gameAccount ~ " action:doorder";
 	auto buysLogName = buysQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 
 	auto recordsBuys = File (buysLogName).byLineCopy
 	    .map !(line => line.strip.split ("\t"))
 	    .map !(line => line.buyRecord (RecordType.buying)).array;
 
-	auto salesQuery = "account:prospectorsc action:mkpurchase";
+	auto salesQuery = "account:" ~ gameAccount ~ " action:mkpurchase";
 	auto salesLogName = salesQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 
 	auto recordsSales = File (salesLogName).byLineCopy
 	    .map !(line => line.strip.split ("\t")).map !(saleRecord).array;
 
-	auto stationQuery = "account:prospectorsc action:sellstuff";
+	auto stationQuery = "account:" ~ gameAccount ~ " action:sellstuff";
 	auto stationLogName =
 	    stationQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 

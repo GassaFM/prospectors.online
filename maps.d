@@ -1869,6 +1869,7 @@ int main (string [] args)
 	doHtml (resTemplate[5..6]);
 	doHtml (resTemplate[6..7]);
 	doHtml (resTemplate[7..8]);
+	doHtml (resTemplate[1..3]);
 	doHtml (resTemplate[1..3] ~ resTemplate[6..7]);
 	doHtml (resTemplate[1..3] ~ resTemplate[7..8]);
 	doHtml (resTemplate[3..6]);
