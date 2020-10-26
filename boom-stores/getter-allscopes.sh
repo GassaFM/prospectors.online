@@ -9,5 +9,5 @@ curl --get \
      --data-urlencode "json=false" \
      --data-urlencode "key_type=$2" \
      --compressed \
-     "https://mainnet.eos.dfuse.io/v0/state/tables/scopes" \
+     "https://eos.dfuse.eosnation.io/v0/state/tables/scopes" \
      > $1.allscopes.binary

@@ -8,5 +8,5 @@ curl --get \
      --data-urlencode "key_type=$2" \
      --data-urlencode "json=false" \
      --compressed \
-     "https://mainnet.eos.dfuse.io/v0/state/table" \
+     "https://eos.dfuse.eosnation.io/v0/state/table" \
      > $1.binary

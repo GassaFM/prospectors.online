@@ -7,5 +7,5 @@ curl --get \
      --data-urlencode "table=$1" \
      --data-urlencode "key_type=name" \
      --compressed \
-     "https://mainnet.eos.dfuse.io/v0/state/table_scopes" \
+     "https://eos.dfuse.eosnation.io/v0/state/table_scopes" \
      > $1.scopelist.json
