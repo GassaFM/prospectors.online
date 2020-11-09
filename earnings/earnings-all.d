@@ -256,12 +256,14 @@ int main (string [] args)
 				richGoldPlotsNum[owner] += 1;
 			}
 
+/*
 			auto cur = location.storage.find !(line =>
 			    line.type_id == 1);
 			if (!cur.empty)
 			{
 				balances[owner] += cur.front.amount;
 			}
+*/
 		}
 
 		bool [string] isJailed;
@@ -275,12 +277,14 @@ int main (string [] args)
 				isJailed[owner] = true;
 			}
 
+/*
 			auto cur = worker.backpack.find !(line =>
 			    line.type_id == 1);
 			if (!cur.empty)
 			{
 				balances[owner] += cur.front.amount;
 			}
+*/
 		}
 
 		long [string] withdrawals;
@@ -533,14 +537,14 @@ int main (string [] args)
 		}
 		file.writeln (`&nbsp;<tt>+</tt> current gold balance<br/>`);
 		file.writeln (`&nbsp;<tt>+</tt> gold in all open orders<br/>`);
-		file.writeln (`&nbsp;<tt>+</tt> raw mined gold on all ` ~
-		    `plots<br/>`);
-		file.writeln (`&nbsp;<tt>+</tt> raw mined gold in all ` ~
-		    `worker backpacks<br/>`);
 		file.writeln (`The above notoriously does ` ~
 		    `<b>NOT</b> include:<br/>`);
 		file.writeln (`&nbsp;<tt>x</tt> deals with payment ` ~
 		    `in PGL<br/>`);
+		file.writeln (`&nbsp;<tt>x</tt> raw mined gold on all ` ~
+		    `plots<br/>`);
+		file.writeln (`&nbsp;<tt>x</tt> raw mined gold in all ` ~
+		    `worker backpacks<br/>`);
 		file.writeln (`&nbsp;<tt>x</tt> alliance member ` ~
 		    `specializations<br/>`);
 		file.writeln (`&nbsp;<tt>x</tt> presale items<br/>`);
