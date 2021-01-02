@@ -45,8 +45,16 @@ auto parseBinary (T) (ref ubyte [] buffer)
 {
 	static if (is (Unqual !(T) == E [], E))
 	{
-		size_t len; // for sizes > 127, should use VarInt32 here
-		len = parseBinary !(byte) (buffer);
+		size_t len = 0;
+		while (true)
+		{
+			auto cur = parseBinary !(byte) (buffer);
+			len = (len << 7) | (cur & 127);
+			if (!(cur & 128))
+			{
+				break;
+			}
+		}
 		E [] res;
 		res.reserve (len);
 		foreach (i; 0..len)
