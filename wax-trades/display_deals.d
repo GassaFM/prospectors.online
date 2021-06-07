@@ -1168,11 +1168,18 @@ int main (string [] args)
 {
 	auto gameAccount = args[1];
 
+	foreach (i; 2..args.length)
+	{
+		alliances ~= Alliance (args[i],
+		    "#CCFFCC", "#00CC00", "#FF7777");
+	}
+
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
 	startDateString = File ("start_date.txt", "r").readln.strip;
 
-	auto buysQuery = "account:" ~ gameAccount ~ " action:doorder";
+	auto buysQuery = "account:" ~ gameAccount ~ " action:doorder" ~
+	    " -db.table:stat";
 	auto buysLogName = buysQuery.sha256Of.format !("%(%02x%)") ~ ".log";
 
 	auto recordsBuys = File (buysLogName).byLineCopy
@@ -1218,8 +1225,6 @@ int main (string [] args)
 
 	doMainTradesPage (lastPriceDeals, lastPriceBuys, lastPriceSales);
 	doAccountPages ();
-
-	alliances ~= Alliance ("ek", "#CCFFCC", "#00CC00", "#FF7777");
 
 	doStats (records, "deals");
 	doStatsExtra (records, "deals");

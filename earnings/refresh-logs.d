@@ -43,7 +43,15 @@ shared static this ()
 
 void updateLog (string endPoint, string query)
 {
-	auto dfuseToken = File ("../dfuse.token").readln.strip;
+	string dfuseToken;
+	try
+	{
+		dfuseToken = File ("../dfuse.token").readln.strip;
+	}
+	catch (Exception e)
+	{
+		dfuseToken = "";
+	}
 	auto sha256 = query.sha256Of.format !("%(%02x%)");
 
 	immutable string cursorFileName = sha256 ~ ".cursor";
@@ -58,7 +66,14 @@ void updateLog (string endPoint, string query)
 	}
 
 	auto connection = HTTP ();
-	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
+//	connection.verbose (true);
+	connection.addRequestHeader ("content-type", "text/plain");
+	stderr.writeln ("dfuse: ", dfuseToken);
+	if (dfuseToken != "")
+	{
+		connection.addRequestHeader ("Authorization",
+		    "Bearer " ~ dfuseToken);
+	}
 	while (true)
 	{
 		writeln ("updating ", query, ", cursor = ", cursor);

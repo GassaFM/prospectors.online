@@ -142,13 +142,25 @@ int main (string [] args)
 {
 	gameAccount = args[1];
 
-	auto dfuseToken = File ("../dfuse.token").readln.strip;
+	string dfuseToken;
+	try
+	{
+		dfuseToken = File ("../dfuse.token").readln.strip;
+	}
+	catch (Exception e)
+	{
+		dfuseToken = "";
+	}
 	endPointBlockId = args[2];
 	endPointTable = args[3];
 	auto isTestnet = (args.length > 6 && args[6] == "testnet");
 
 	connection = HTTP ();
-	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
+	if (dfuseToken != "")
+	{
+		connection.addRequestHeader ("Authorization",
+		    "Bearer " ~ dfuseToken);
+	}
 
 	auto nowTime = Clock.currTime (UTC ());
 	nowTime = SysTime.fromUnixTime

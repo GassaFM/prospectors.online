@@ -8,5 +8,5 @@ curl --get \
      --data-urlencode "key_type=$2" \
      --data-urlencode "json=false" \
      --compressed \
-     "https://mainnet.wax.dfuse.io/v0/state/table" \
+     "https://wax.dfuse.eosnation.io/v0/state/table" \
      > $1.binary

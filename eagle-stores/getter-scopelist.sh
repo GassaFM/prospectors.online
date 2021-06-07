@@ -3,7 +3,7 @@ export DFUSETOKEN=`cat ../dfuse.token`
 curl --get \
      -k \
      -H "Authorization: Bearer $DFUSETOKEN" \
-     --data-urlencode "account=prospectorsc" \
+     --data-urlencode "account=prospectorsq" \
      --data-urlencode "table=$1" \
      --data-urlencode "key_type=name" \
      --compressed \

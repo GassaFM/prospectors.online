@@ -57,7 +57,15 @@ string maybeStr () (const auto ref JSONValue value)
 
 void updateLog (string endPoint, string query)
 {
-	auto dfuseToken = File ("../dfuse.token").readln.strip;
+	string dfuseToken;
+	try
+	{
+		dfuseToken = File ("../dfuse.token").readln.strip;
+	}
+	catch (Exception e)
+	{
+		dfuseToken = "";
+	}
 	auto sha256 = query.sha256Of.format !("%(%02x%)");
 
 	immutable string cursorFileName = sha256 ~ ".cursor";
@@ -72,8 +80,14 @@ void updateLog (string endPoint, string query)
 	}
 
 	auto connection = HTTP ();
-	connection.addRequestHeader ("Authorization", "Bearer " ~ dfuseToken);
+//	connection.verbose (true);
 	connection.addRequestHeader ("content-type", "application/json");
+	stderr.writeln ("dfuse: ", dfuseToken);
+	if (dfuseToken != "")
+	{
+		connection.addRequestHeader ("Authorization",
+		    "Bearer " ~ dfuseToken);
+	}
 	auto logFile = File (sha256 ~ ".log", "ab");
 	while (true)
 	{

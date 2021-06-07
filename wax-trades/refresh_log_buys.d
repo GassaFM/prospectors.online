@@ -87,7 +87,7 @@ int main (string [] args)
 
 	stdout.setvbuf (16384, _IOLBF);
 	prepare ();
-	updateLogGeneric !(updateLogBuys) (args[2],
-	    queryForm, "account:" ~ gameAccount ~ " action:doorder");
+	updateLogGeneric !(updateLogBuys) (args[2], queryForm,
+	    "account:" ~ gameAccount ~ " action:doorder -db.table:stat");
 	return 0;
 }

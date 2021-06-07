@@ -424,6 +424,7 @@ int main (string [] args)
 		long [] buildJobReadyTime;
 		foreach (curOwner; buildJobOwners)
 		{
+			stderr.writeln (curOwner);
 			foreach (worker; workersByOwner[curOwner])
 			{
 				if (worker.job.job_type == 4 &&

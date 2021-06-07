@@ -10,3 +10,4 @@ curl --get \
      --compressed \
      "https://eos.dfuse.eosnation.io/v0/state/table" \
      > $1.binary
+#     --data-urlencode "block_num=154999999" \

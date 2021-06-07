@@ -19,7 +19,7 @@ while true ; do
 	     --data-urlencode "json=false" \
 	     --data-urlencode "key_type=$2" \
 	     --compressed \
-	     "https://mainnet.wax.dfuse.io/v0/state/tables/scopes" \
+	     "https://wax.dfuse.eosnation.io/v0/state/tables/scopes" \
 	     > $name
 	i=$(( $j ))
 	echo $name >> $1.partnames

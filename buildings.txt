@@ -13,3 +13,4 @@
 13	Coffee House	C	#83EEBD	#06CC6A
 14	Bank	B	#F7F3B7	#C7C397
 15	Railway Station	R	#AEAE46	#FEFEF0
+16	EOS Royale	R	#FFF7D0	#FFD700
