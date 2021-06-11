@@ -72,7 +72,7 @@ uint64_t stringToName (string input)
 string nameToString (uint64_t input)
 {
 	string res;
-	for (int pos = 64 - 5; input != 0; pos -= 5)
+	for (int pos = 64 - 5; input != 0; pos = max (pos - 5, 0))
 	{
 		auto cur = (input >> pos) & 0x1f;
 		res ~= base32ToChar (cur);
@@ -151,27 +151,55 @@ struct Name
 	}
 }
 
-struct CurrencyAmount
+struct CurrencySymbol
 {
 	static immutable int maxNameLength = 7;
 
-	uint64_t quantity;
 	uint8_t point;
 	char [maxNameLength] name;
+
+	ubyte [] toBinary () const
+	{
+		ubyte [] res;
+		res ~= point.toBinary;
+		res ~= name.toBinary;
+		return res;
+	}
+
+	int opCmp () (const auto ref CurrencySymbol that) const
+	{
+		if (this.point != that.point)
+		{
+			return (this.point > that.point) -
+			    (this.point < that.point);
+		}
+		return (this.name > that.name) - (this.name < that.name);
+	}
+
+	string prettyName () const
+	{
+		return name[].stripRight ('\0').text;
+	}
+}
+
+struct CurrencyAmount
+{
+	uint64_t quantity;
+	CurrencySymbol symbol;
 
 	this (string s)
 	{
 		auto t = s.split (" ");
 		auto r = t[0].split (".");
-		point = 0;
+		symbol.point = 0;
 		if (r.length == 2)
 		{
-			point = to !(uint8_t) (r[1].length);
+			symbol.point = to !(uint8_t) (r[1].length);
 			r[0] ~= r[1];
 		}
-		name[] = '\0';
-		enforce (t[1].length <= maxNameLength);
-		name[0..t[1].length] = t[1][];
+		symbol.name[] = '\0';
+		enforce (t[1].length <= symbol.maxNameLength);
+		symbol.name[0..t[1].length] = t[1][];
 		quantity = to !(uint64_t) (r[0]);
 	}
 
@@ -179,8 +207,7 @@ struct CurrencyAmount
 	    (const auto ref CurrencyAmount that) const
 	    if (op == "+")
 	{
-		enforce (this.point == that.point);
-		enforce (this.name == that.name);
+		enforce (this.symbol == that.symbol);
 		CurrencyAmount res = this;
 		res.quantity = this.quantity + that.quantity;
 		return res;
@@ -190,8 +217,7 @@ struct CurrencyAmount
 	{
 		ubyte [] res;
 		res ~= quantity.toBinary;
-		res ~= point.toBinary;
-		res ~= name.toBinary;
+		res ~= symbol.toBinary;
 		return res;
 	}
 }

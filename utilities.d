@@ -43,18 +43,23 @@ bool isTool (int id)
 
 auto parseBinary (T) (ref ubyte [] buffer)
 {
+//	debug {writeln (T.stringof);}
 	static if (is (Unqual !(T) == E [], E))
 	{
 		size_t len = 0;
+		size_t shift = 0;
 		while (true)
 		{
 			auto cur = parseBinary !(byte) (buffer);
-			len = (len << 7) | (cur & 127);
+//			len = (len << 7) | (cur & 127);
+			len |= (cur & 127) << shift;
 			if (!(cur & 128))
 			{
 				break;
 			}
+			shift += 7;
 		}
+//		debug {writeln ("length = ", len);}
 		E [] res;
 		res.reserve (len);
 		foreach (i; 0..len)
