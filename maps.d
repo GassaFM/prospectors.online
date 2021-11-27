@@ -648,6 +648,7 @@ int main (string [] args)
 		int [string] totalRichPlots;
 		int [string] totalUnknownPlots;
 		long [string] totalQuantity;
+		long [string] borderQuantity;
 		foreach (name; resources.map !(t => t.name))
 		{
 			quantity[""][name] = 0;
@@ -656,6 +657,7 @@ int main (string [] args)
 			totalRichPlots[name] = 0;
 			totalUnknownPlots[name] = 0;
 			totalQuantity[name] = 0;
+			borderQuantity[name] = 0;
 		}
 
 		bool showRich = (resources.length == 1) &&
@@ -689,6 +691,14 @@ int main (string [] args)
 						    curQuantity;
 						totalQuantity[name] +=
 						    curQuantity;
+						if (row == minRow ||
+						    row == maxRow ||
+						    col == minCol ||
+						    col == maxCol)
+						{
+							borderQuantity[name] +=
+							curQuantity;
+						}
 						plotsByOwner[owner][name] ~=
 						    pos;
 					}
@@ -826,6 +836,24 @@ int main (string [] args)
 			}
 			file.writeln (`<td style="text-align:right">`,
 			    toAmountString (totalQuantity[name],
+			    name == "gold", false), `</td>`);
+			file.writeln (`<td>&nbsp;</td>`);
+			file.writeln (`</tr>`);
+
+			file.writeln (`<tr>`);
+			file.writeln (`<td style="text-align:right">` ~
+			    `&nbsp;</td>`);
+			file.writefln (`<td class="plot" width="16px">` ~
+			    `&nbsp;</td>`);
+			file.writeln (`<td style="font-weight:bold">` ~
+			    `On the border</td>`);
+			if (showRich)
+			{
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
+			}
+			file.writeln (`<td style="text-align:right">`,
+			    toAmountString (borderQuantity[name],
 			    name == "gold", false), `</td>`);
 			file.writeln (`<td>&nbsp;</td>`);
 			file.writeln (`</tr>`);
