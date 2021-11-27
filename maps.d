@@ -239,6 +239,8 @@ int main (string [] args)
 {
 	immutable int buildStepLength =
 	    (args.length > 1 && args[1] == "testnet") ? 1500 : 15000;
+	immutable int isGrandLand =
+	    (args.length > 1 && args[1] == "grandland");
 	immutable int buildSteps = 3;
 
 	auto itemList = [ItemPlan.init] ~
@@ -332,6 +334,12 @@ int main (string [] args)
 		maxRow = max (maxRow, cur.row);
 		minCol = min (minCol, cur.col);
 		maxCol = max (maxCol, cur.col);
+	}
+
+	auto rowsList = iota (minRow, maxRow + 1).array;
+	if (isGrandLand)
+	{
+		reverse (rowsList);
 	}
 
 	auto nowTime = Clock.currTime (UTC ());
@@ -577,7 +585,8 @@ int main (string [] args)
 		{
 			assert (false);
 		}
-		if (maskOwner && locations[pos].owner.text != "")
+		if (maskOwner && locations[pos].owner.text != "" &&
+		    !isGrandLand)
 		{
 			res ~= "x";
 		}
@@ -652,7 +661,7 @@ int main (string [] args)
 		bool showRich = (resources.length == 1) &&
 		    ((resources.front.name in richLimit) !is null);
 
-		foreach (row; minRow..maxRow + 1)
+		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
 			file.writeln (`<td class="coord">`, row, `</td>`);
@@ -884,7 +893,7 @@ int main (string [] args)
 		real midCol = 0.0;
 		real midDen = 0.0;
 		int totalOnBorder = 0;
-		foreach (row; minRow..maxRow + 1)
+		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
 			file.writeln (`<td class="coord">`, row, `</td>`);
@@ -970,7 +979,7 @@ int main (string [] args)
 		writeCoordRow (file);
 
 		int [string] numPlots;
-		foreach (row; minRow..maxRow + 1)
+		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
 			file.writeln (`<td class="coord">`, row, `</td>`);
@@ -1362,7 +1371,7 @@ int main (string [] args)
 		auto upgraded = new int [buildings.length];
 		auto inUpgrade2 = new int [buildings.length];
 		auto upgraded2 = new int [buildings.length];
-		foreach (row; minRow..maxRow + 1)
+		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
 			file.writeln (`<td class="coord">`, row, `</td>`);
@@ -1644,7 +1653,7 @@ int main (string [] args)
 			numAlliancePlots[key] = 0;
 		}
 
-		foreach (row; minRow..maxRow + 1)
+		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
 			file.writeln (`<td class="coord">`, row, `</td>`);
