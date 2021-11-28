@@ -920,6 +920,7 @@ int main (string [] args)
 		real midRow = 0.0;
 		real midCol = 0.0;
 		real midDen = 0.0;
+		int totalWorkers = 0;
 		int totalOnBorder = 0;
 		foreach (row; rowsList)
 		{
@@ -941,6 +942,7 @@ int main (string [] args)
 					auto name = resource.name;
 					auto fun = resource.fun;
 					auto divisor = resource.divisor;
+					totalWorkers += fun (pos);
 					if (row == minRow || row == maxRow ||
 					    col == minCol || col == maxCol)
 					{
@@ -985,8 +987,8 @@ int main (string [] args)
 		file.writeln (`</tbody>`);
 		file.writeln (`</table>`);
 		file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
-		file.writefln (`<p>Workers on the border: %d.</p>`,
-		    totalOnBorder);
+		file.writefln (`<p>Workers total / on the border: ` ~
+		    `%d / %d.</p>`, totalWorkers, totalOnBorder);
 		file.writefln (`<p>Average worker position: ` ~
 		    `%.2f/%.2f.</p>`, midCol / midDen, midRow / midDen);
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
@@ -1254,7 +1256,7 @@ int main (string [] args)
 					    `style="text-align:right">%s</td>`,
 					    resTemplate[r].name, classString
 					    (makeValue (resTemplate[r], t.key)
-					    [0..$ - 1]),
+					    [0..$ - !isGrandLand]),
 					    toAmountString (resTemplate[r].fun
 					    (t.key), resTemplate[r].name ==
 					    "gold", false));
@@ -1361,7 +1363,7 @@ int main (string [] args)
 					    `style="text-align:right">%s</td>`,
 					    resTemplate[r].name, classString
 					    (makeValue (resTemplate[r], t.key)
-					    [0..$ - 1]),
+					    [0..$ - !isGrandLand]),
 					    toAmountString (resTemplate[r].fun
 					    (t.key), resTemplate[r].name ==
 					    "gold", false));
