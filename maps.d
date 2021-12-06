@@ -627,10 +627,20 @@ int main (string [] args)
 	resourceLimit["moss"] =      300_000;
 
 	int [string] richLimit;
-	richLimit["gold"]       = 12_000_000;
-	richLimit["coal"]       = 12_000_000;
-	richLimit["clay"]       = 12_000_000;
-	richLimit["ore"]        = 12_000_000;
+	if (isGrandLand)
+	{
+		richLimit["gold"]       = 51_000_000;
+		richLimit["coal"]       = 67_000_000;
+		richLimit["clay"]       = 87_000_000;
+		richLimit["ore"]        = 77_000_000;
+	}
+	else
+	{
+		richLimit["gold"]       = 12_000_000;
+		richLimit["coal"]       = 12_000_000;
+		richLimit["clay"]       = 12_000_000;
+		richLimit["ore"]        = 12_000_000;
+	}
 
 	ResTemplate [] resTemplate;
 	resTemplate ~= ResTemplate ("gold",
