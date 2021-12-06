@@ -16,6 +16,7 @@ import std.typecons;
 
 import prospectorsc_abi;
 import transaction;
+import utilities;
 
 alias toUpper = std.ascii.toUpper;
 
@@ -348,6 +349,7 @@ int main (string [] args)
 
 	workerElement [] [string] workersByOwner;
 	int [Coord] workerNum;
+	int [short []] workersByTools;
 
 	{
 		auto workerJSON = File ("worker.binary", "rb")
@@ -361,15 +363,25 @@ int main (string [] args)
 			{
 				assert (false);
 			}
+
 			auto locId = curWorker.loc_id;
 			auto pos = toCoord (locId);
 			auto activeTime = curWorker.job.ready_time;
-			if (nowUnix - activeTime <= 7 * 24 * 60 * 60)
-			{
-				workerNum[pos] += 1;
-			}
 			auto owner = curWorker.owner.text;
 			workersByOwner[owner] ~= curWorker;
+
+			if (curWorker.job.job_type == 9 ||
+			    nowUnix - activeTime > 7 * 24 * 60 * 60)
+			{ // jailed or inactive for a week
+				continue;
+			}
+
+			workerNum[pos] += 1;
+
+			auto tools = curWorker.equipment.map !(item =>
+			    item.type_id).filter !(isTool).array;
+			tools.sort ();
+			workersByTools[tools.idup] += 1;
 		}
 	}
 
@@ -922,6 +934,7 @@ int main (string [] args)
 		real midDen = 0.0;
 		int totalWorkers = 0;
 		int totalOnBorder = 0;
+		int totalBusy = 0;
 		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
@@ -990,9 +1003,47 @@ int main (string [] args)
 		file.writefln (`<p>Workers total / on the border: ` ~
 		    `%d / %d.</p>`, totalWorkers, totalOnBorder);
 		file.writefln (`<p>Average worker position: ` ~
-		    `%.2f/%.2f.</p>`, midCol / midDen, midRow / midDen);
+		    `%.2f/%.2f.</p>`, midCol / (midDen + !midDen),
+		    midRow / (midDen + !midDen));
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
 		    `to see details.</p>`);
+
+		{
+			auto toolSets = workersByTools.byKey.array;
+			toolSets.schwartzSort !(curItems =>
+			    tuple (-workersByTools[curItems], curItems));
+
+			file.writefln (`<h2>Workers by equipped ` ~
+			    `tool sets:</h2>`);
+			file.writeln (`<table border="1px" padding="2px">`);
+			file.writeln (`<tbody>`);
+
+			file.writeln (`<tr>`);
+			file.writefln (`<th>#</th>`);
+			file.writefln (`<th>Tool Set</th>`);
+			file.writefln (`<th>Number of workers</th>`);
+			file.writeln (`</tr>`);
+
+			foreach (i, curItems; toolSets)
+			{
+				file.writeln (`<tr>`);
+				file.writeln (`<td style="text-align:right">`,
+				    (i + 1), `</td>`);
+				file.writeln (`<td style='font-family:` ~
+				    `"Courier New", Courier, monospace'>`,
+				    curItems.empty ? "(none)" :
+				    curItems.map !(i => itemList[i].name)
+				    .join (" and "),
+				    `</td>`);
+				file.writeln (`<td style="text-align:right">`,
+				    workersByTools[curItems], `</td>`);
+				file.writeln (`</tr>`);
+			}
+
+			file.writeln (`</tbody>`);
+			file.writeln (`</table>`);
+		}
+
 		file.writefln (`<p><a href="..">Back to main page</a></p>`);
 		file.writeln (`</body>`);
 		file.writeln (`</html>`);
