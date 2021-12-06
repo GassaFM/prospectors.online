@@ -630,7 +630,7 @@ int main (string [] args)
 	if (isGrandLand)
 	{
 		richLimit["gold"]       = 51_000_000;
-		richLimit["coal"]       = 67_000_000;
+		richLimit["coal"]       = 68_000_000;
 		richLimit["clay"]       = 87_000_000;
 		richLimit["ore"]        = 77_000_000;
 	}
