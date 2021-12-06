@@ -249,6 +249,8 @@ int main (string [] args)
 	    .map !(t => ItemPlan (t[0].to !(long), t[1], t[2].to !(int)))
 	    .array;
 
+	auto diplomaList = File ("../diplomas.txt").byLineCopy.array;
+
 	int rentPrice = -1;
 
 	{
@@ -350,6 +352,7 @@ int main (string [] args)
 	workerElement [] [string] workersByOwner;
 	int [Coord] workerNum;
 	int [short []] workersByTools;
+	int [int] workersByDiploma;
 
 	{
 		auto workerJSON = File ("worker.binary", "rb")
@@ -382,6 +385,14 @@ int main (string [] args)
 			    item.type_id).filter !(isTool).array;
 			tools.sort ();
 			workersByTools[tools.idup] += 1;
+
+			foreach (i; 0..diplomaList.length.to !(int))
+			{
+				if (curWorker.diplomas & (1 << i))
+				{
+					workersByDiploma[i] += 1;
+				}
+			}
 		}
 	}
 
@@ -1008,7 +1019,12 @@ int main (string [] args)
 		file.writefln (`<p>Tip: hover the mouse over a plot ` ~
 		    `to see details.</p>`);
 
+		file.writeln (`<table border="0px" padding="0px">`);
+		file.writeln (`<tbody>`);
+		file.writeln (`<tr>`);
+
 		{
+			file.writeln (`<td style="vertical-align: top">`);
 			auto toolSets = workersByTools.byKey.array;
 			toolSets.schwartzSort !(curItems =>
 			    tuple (-workersByTools[curItems], curItems));
@@ -1032,7 +1048,7 @@ int main (string [] args)
 				file.writeln (`<td style='font-family:` ~
 				    `"Courier New", Courier, monospace'>`,
 				    curItems.empty ? "(none)" :
-				    curItems.map !(i => itemList[i].name)
+				    curItems.map !(id => itemList[id].name)
 				    .join (" and "),
 				    `</td>`);
 				file.writeln (`<td style="text-align:right">`,
@@ -1042,7 +1058,49 @@ int main (string [] args)
 
 			file.writeln (`</tbody>`);
 			file.writeln (`</table>`);
+			file.writeln (`</td>`);
 		}
+
+		file.writeln (`<td style="width:30px">`);
+		file.writeln (`&nbsp;`);
+		file.writeln (`</td>`);
+
+		{
+			file.writeln (`<td style="vertical-align: top">`);
+			auto diplomaWorkers = workersByDiploma.byKey.array;
+			diplomaWorkers.schwartzSort !(d =>
+			    tuple (-workersByDiploma[d], d));
+
+			file.writefln (`<h2>Education:</h2>`);
+			file.writeln (`<table border="1px" padding="2px">`);
+			file.writeln (`<tbody>`);
+
+			file.writeln (`<tr>`);
+			file.writefln (`<th>#</th>`);
+			file.writefln (`<th>Diploma</th>`);
+			file.writefln (`<th>Number of workers</th>`);
+			file.writeln (`</tr>`);
+
+			foreach (i, id; diplomaWorkers)
+			{
+				file.writeln (`<tr>`);
+				file.writeln (`<td style="text-align:right">`,
+				    (i + 1), `</td>`);
+				file.writeln (`<td style='font-family:` ~
+				    `"Courier New", Courier, monospace'>`,
+				    diplomaList[id], `</td>`);
+				file.writeln (`<td style="text-align:right">`,
+				    workersByDiploma[id], `</td>`);
+				file.writeln (`</tr>`);
+			}
+
+			file.writeln (`</tbody>`);
+			file.writeln (`</table>`);
+			file.writeln (`</td>`);
+		}
+
+		file.writeln (`</tbody>`);
+		file.writeln (`</table>`);
 
 		file.writefln (`<p><a href="..">Back to main page</a></p>`);
 		file.writeln (`</body>`);
