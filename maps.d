@@ -310,6 +310,7 @@ int main (string [] args)
 	{
 		auto locJSON = File ("loc.binary", "rb")
 		    .byLine.joiner.parseJSON;
+		static immutable int [] emptyAlt = [0, 0, 0];
 		foreach (ref row; locJSON["rows"].array)
 		{
 			auto id = row["key"].str.to !(long);
@@ -317,7 +318,6 @@ int main (string [] args)
 			auto hex = row["hex"].str.chunks (2).map !(value =>
 			    to !(ubyte) (value, 16)).array;
 			locations[coord] = parseBinary !(locElement) (hex);
-			static immutable int [] emptyAlt = [0, 0, 0];
 			if (!hex.empty && !hex.equal (emptyAlt))
 			{
 				assert (false);
@@ -629,7 +629,7 @@ int main (string [] args)
 	int [string] richLimit;
 	if (isGrandLand)
 	{
-		richLimit["gold"]       = 51_000_000;
+		richLimit["gold"]       = 75_000_000;
 		richLimit["coal"]       = 68_000_000;
 		richLimit["clay"]       = 87_000_000;
 		richLimit["ore"]        = 77_000_000;
@@ -1611,6 +1611,25 @@ int main (string [] args)
 						    buildings[buildId].sign ~
 						    `</u></b>`;
 						upgraded2[buildId] += 1;
+					}
+					if (done % buildStepLength == 0 &&
+					    done / buildStepLength >=
+					    buildSteps)
+					{
+						auto curHealth =
+						    locations[pos]
+						    .building.health;
+						if (curHealth == 0)
+						{
+							curHealth = done;
+						}
+						else
+						{
+							curHealth -= 1;
+						}
+						hoverText ~= format
+						    (`&#10;health: %s of %s`,
+						    curHealth, done);
 					}
 					backgroundColor = mixColor
 					    (buildings[buildId].loColor,
