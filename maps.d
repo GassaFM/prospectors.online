@@ -754,7 +754,8 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
-				auto curAlliance = (owner == "") ? "" :
+				auto curAlliance = (owner == "" ||
+				    (accounts[owner].flags & 6) == 0) ? "" :
 				    accounts[owner].alliance.text;
 				if (curAlliance != "")
 				{
@@ -1002,7 +1003,8 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
-				auto curAlliance = (owner == "") ? "" :
+				auto curAlliance = (owner == "" ||
+				    (accounts[owner].flags & 6) == 0) ? "" :
 				    accounts[owner].alliance.text;
 				if (curAlliance != "")
 				{
@@ -1154,7 +1156,8 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
-				auto curAlliance = (owner == "") ? "" :
+				auto curAlliance = (owner == "" ||
+				    (accounts[owner].flags & 6) == 0) ? "" :
 				    accounts[owner].alliance.text;
 				if (curAlliance != "")
 				{
@@ -1646,7 +1649,8 @@ int main (string [] args)
 				{
 					hoverText ~= `&#10;owner: ` ~ owner;
 				}
-				auto curAlliance = (owner == "") ? "" :
+				auto curAlliance = (owner == "" ||
+				    (accounts[owner].flags & 6) == 0) ? "" :
 				    accounts[owner].alliance.text;
 				if (curAlliance != "")
 				{
@@ -1776,7 +1780,8 @@ int main (string [] args)
 		{
 			auto owner = locations[pos].owner.text;
 			auto param = locations[pos].building.param;
-			auto curAlliance = (owner == "") ? "" :
+			auto curAlliance = (owner == "" ||
+			    (accounts[owner].flags & 6) == 0) ? "" :
 			    accounts[owner].alliance.text;
 			auto backgroundColor = (owner == "") ?
 			    0xEEEEEE : toColorHash (owner);
@@ -1833,7 +1838,8 @@ int main (string [] args)
 					assert (false);
 				}
 				auto owner = locations[pos].owner.text;
-				auto curAlliance = (owner == "") ? "" :
+				auto curAlliance = (owner == "" ||
+				    (accounts[owner].flags & 6) == 0) ? "" :
 				    accounts[owner].alliance.text;
 				auto backgroundColor = (owner == "") ?
 				    0xEEEEEE : toColorHash (owner);
@@ -1902,7 +1908,7 @@ int main (string [] args)
 			}
 
 			auto alliance = accounts[owner].alliance.text;
-			if (alliance == "")
+			if (alliance == "" || (accounts[owner].flags & 6) == 0)
 			{
 				continue;
 			}
@@ -1920,7 +1926,8 @@ int main (string [] args)
 		foreach (ref account; accounts)
 		{
 			auto alliance = account.alliance.text;
-			if (alliance == "")
+			auto owner = account.name.text;
+			if (alliance == "" || (accounts[owner].flags & 6) == 0)
 			{
 				continue;
 			}
