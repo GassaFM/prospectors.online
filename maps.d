@@ -1523,6 +1523,7 @@ int main (string [] args)
 		auto upgraded = new int [buildings.length];
 		auto inUpgrade2 = new int [buildings.length];
 		auto upgraded2 = new int [buildings.length];
+		auto total = new int [buildings.length];
 		foreach (row; rowsList)
 		{
 			file.writeln (`<tr>`);
@@ -1634,6 +1635,7 @@ int main (string [] args)
 						    (`&#10;health: %s of %s`,
 						    curHealth, done);
 					}
+					total[buildId] += 1;
 					backgroundColor = mixColor
 					    (buildings[buildId].loColor,
 					    buildings[buildId].hiColor,
@@ -1701,6 +1703,7 @@ int main (string [] args)
 		file.writefln (`<th>Level 2</th>`);
 		file.writefln (`<th>2 &gt;&gt;&gt; 3</th>`);
 		file.writefln (`<th>Level 3</th>`);
+		file.writefln (`<th>Total</th>`);
 		file.writeln (`</tr>`);
 
 		foreach (ref building; buildings)
@@ -1738,6 +1741,9 @@ int main (string [] args)
 			    inUpgrade2[building.id.to !(int)], `</td>`);
 			file.writeln (`<td style="text-align:right">`,
 			    upgraded2[building.id.to !(int)], `</td>`);
+			file.writeln (`<td style="text-align:right;` ~
+			    `font-weight:bold">`,
+			    total[building.id.to !(int)], `</td>`);
 			file.writeln (`</tr>`);
 		}
 
@@ -1758,6 +1764,8 @@ int main (string [] args)
 		    inUpgrade2.sum, `</td>`);
 		file.writeln (`<td style="text-align:right">`,
 		    upgraded2.sum, `</td>`);
+		file.writeln (`<td style="text-align:right;font-weight:bold">`,
+		    total.sum, `</td>`);
 		file.writeln (`</tr>`);
 
 		file.writeln (`</tbody>`);
