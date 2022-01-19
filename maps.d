@@ -677,8 +677,10 @@ int main (string [] args)
 		writeCoordRow (file);
 		long [string] [string] quantity;
 		int [string] [string] richPlots;
+		int [string] [string] resourcePlots;
 		Coord [] [string] [string] plotsByOwner;
 		int [string] totalRichPlots;
+		int [string] totalResourcePlots;
 		int [string] totalUnknownPlots;
 		long [string] totalQuantity;
 		long [string] borderQuantity;
@@ -686,8 +688,10 @@ int main (string [] args)
 		{
 			quantity[""][name] = 0;
 			richPlots[""][name] = 0;
+			resourcePlots[""][name] = 0;
 			plotsByOwner[""][name] = null;
 			totalRichPlots[name] = 0;
+			totalResourcePlots[name] = 0;
 			totalUnknownPlots[name] = 0;
 			totalQuantity[name] = 0;
 			borderQuantity[name] = 0;
@@ -737,8 +741,13 @@ int main (string [] args)
 					}
 					auto isRichPlot = showRich &&
 					    (fun (pos) > richLimit[name]);
+					auto isResourcePlot = (fun (pos) > 0);
 					richPlots[owner][name] += isRichPlot;
+					resourcePlots[owner][name] +=
+					    isResourcePlot;
 					totalRichPlots[name] += isRichPlot;
+					totalResourcePlots[name] +=
+					    isResourcePlot;
 					totalUnknownPlots[name] +=
 					    (fun (pos) == -1);
 					hoverText ~= `&#10;` ~ name ~ `: ` ~
@@ -810,6 +819,7 @@ int main (string [] args)
 			{
 				file.writefln (`<th>Rich plots</th>`);
 			}
+			file.writefln !(`<th>With %s</th>`) (name);
 			file.writefln (`<th>Total quantity</th>`);
 			file.writefln (`<th>Best plots</th>`);
 			file.writeln (`</tr>`);
@@ -835,6 +845,9 @@ int main (string [] args)
 					    `"text-align:right">`,
 					    richPlots[owner][name], `</td>`);
 				}
+				file.writeln (`<td style=` ~
+				    `"text-align:right">`,
+				    resourcePlots[owner][name], `</td>`);
 				file.writeln (`<td style="text-align:right">`,
 				    toAmountString (quantity[owner][name],
 				    name == "gold", false), `</td>`);
@@ -868,6 +881,8 @@ int main (string [] args)
 				file.writeln (`<td style="text-align:right">` ~
 				    `&nbsp;</td>`);
 			}
+			file.writeln (`<td style="text-align:right">` ~
+			    `&nbsp;</td>`);
 			file.writeln (`<td style="text-align:right">`,
 			    toAmountString (totalQuantity[name],
 			    name == "gold", false), `</td>`);
@@ -886,6 +901,8 @@ int main (string [] args)
 				file.writeln (`<td style="text-align:right">` ~
 				    `&nbsp;</td>`);
 			}
+			file.writeln (`<td style="text-align:right">` ~
+			    `&nbsp;</td>`);
 			file.writeln (`<td style="text-align:right">`,
 			    toAmountString (borderQuantity[name],
 			    name == "gold", false), `</td>`);
@@ -903,6 +920,8 @@ int main (string [] args)
 				    `Rich plots</td>`);
 				file.writeln (`<td style="text-align:right">` ~
 				    `&nbsp;</td>`);
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
 				file.writeln (`<td style="text-align:right">`,
 				    totalRichPlots[name], `</td>`);
 				file.writeln (`<td>&nbsp;</td>`);
@@ -913,8 +932,27 @@ int main (string [] args)
 				    `&nbsp;</td>`);
 				file.writeln (`<td class="plot" ` ~
 				    `width="16px">&nbsp;</td>`);
+				file.writefln !(`<td style=` ~
+				    `"font-weight:bold">Plots with %s</td>`)
+				    (name);
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
+				file.writeln (`<td style="text-align:right">`,
+				    totalResourcePlots[name], `</td>`);
+				file.writeln (`<td>&nbsp;</td>`);
+				file.writeln (`</tr>`);
+
+				file.writeln (`<tr>`);
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
+				file.writeln (`<td class="plot" ` ~
+				    `width="16px">&nbsp;</td>`);
 				file.writeln (`<td style="font-weight:bold">` ~
 				    `Unknown</td>`);
+				file.writeln (`<td style="text-align:right">` ~
+				    `&nbsp;</td>`);
 				file.writeln (`<td style="text-align:right">` ~
 				    `&nbsp;</td>`);
 				file.writeln (`<td style="text-align:right">`,
