@@ -1,0 +1,11 @@
+(none)
+Stone Mason
+Metallurgist
+Potter
+Carpenter
+Blacksmith
+Coachbuilder
+Trolley Master
+Coffee Roaster
+Barista
+Gold Miner
