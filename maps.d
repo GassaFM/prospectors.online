@@ -249,7 +249,8 @@ int main (string [] args)
 	    .map !(t => ItemPlan (t[0].to !(long), t[1], t[2].to !(int)))
 	    .array;
 
-	auto diplomaList = File ("../diplomas.txt").byLineCopy.array;
+	auto diplomaList = File ("../diplomas.txt").byLineCopy
+	    .map !(line => line.strip.split ("\t")[0]).array;
 
 	int rentPrice = -1;
 
@@ -391,6 +392,9 @@ int main (string [] args)
 				if (curWorker.diplomas & (1 << i))
 				{
 					workersByDiploma[i] += 1;
+					writeln (owner, " ",
+					accounts[owner].alliance.text, " ",
+					diplomaList[i]);
 				}
 			}
 		}

@@ -181,6 +181,38 @@ int main (string [] args)
 	file.writefln (`<p>Generated on %s (UTC).</p>`, nowString);
 	file.writefln (`<p>Tip: hover the mouse over table cells ` ~
 	    `to see explanations.</p>`);
+
+	file.writeln (`<h2>Current diploma prices:</h2>`);
+	file.writeln (`<table id="diploma-price" border="1px" padding="2px">`);
+
+	file.writeln (`<thead>`);
+	file.writeln (`<tr>`);
+	file.writefln !(`<th>Diploma</th>`);
+	file.writefln !(`<th>Study Time</th>`);
+	file.writefln !(`<th>Cost of Studies</th>`);
+	file.writeln (`</tr>`);
+	file.writeln (`</thead>`);
+
+	file.writeln (`<tbody>`);
+	auto diplomaList = File ("../diplomas.txt").byLineCopy
+	    .map !(line => line.strip.split ("\t")).array;
+
+	foreach (const ref line; diplomaList.drop (1))
+	{
+		file.writeln (`<tr>`);
+		file.writefln !(`<td style='font-family:` ~
+		    `"Courier New", Courier, monospace'>%s</td>`) (line[0]);
+		file.writefln !(`<td class="amount">%s days</td>`) (line[2]);
+		auto d = line[1].to !(int);
+		file.writefln !(`<td class="amount" ` ~
+		    `title="as %s days of rent">%s gold</td>`)
+		    (d, oldPrice / 30 * d);
+		file.writeln (`</tr>`);
+	}
+
+	file.writeln (`</tbody>`);
+	file.writeln (`</table>`);
+
 	file.writefln (`<p><a href="index.html">Back to main page</a></p>`);
 	file.writeln (`</body>`);
 	file.writeln (`</html>`);
